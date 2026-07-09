@@ -1,0 +1,90 @@
+{% extends "base_app.html" %}
+{% set active_page = 'incidents' %}
+{% block title %}Incidente #{{ incident.id }} · SOC-PYME{% endblock %}
+{% block page_title %}Incidente #{{ incident.id }}{% endblock %}
+{% block page_sub %}Detalle y trazabilidad del ticket{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h2>{{ incident.title }}</h2>
+    <p>
+      <span class="badge sev-{{ incident.severity }}">{{ incident.severity_label }}</span>
+      <span class="badge st-{{ incident.status }}">{{ incident.status_label }}</span>
+    </p>
+  </div>
+  <a href="{{ url_for('incidents.list_incidents') }}" class="btn btn-ghost btn-sm">← Volver a incidentes</a>
+</div>
+
+<div class="detail-grid">
+  <!-- Izquierda: datos + bitácora -->
+  <div>
+    <div class="panel">
+      <div class="panel-title">Información del incidente</div>
+      <div style="margin-top:14px;">
+        <div class="detail-row"><span class="k">ID</span><span class="v mono">#{{ incident.id }}</span></div>
+        <div class="detail-row"><span class="k">Severidad</span><span class="v"><span class="badge sev-{{ incident.severity }}">{{ incident.severity_label }}</span></span></div>
+        <div class="detail-row"><span class="k">Estado</span><span class="v"><span class="badge st-{{ incident.status }}">{{ incident.status_label }}</span></span></div>
+        <div class="detail-row"><span class="k">Asignado a</span><span class="v">{{ incident.assignee.name if incident.assignee else '— Sin asignar —' }}</span></div>
+        <div class="detail-row"><span class="k">Creado</span><span class="v mono">{{ incident.created_at.strftime('%d/%m/%Y %H:%M') }}</span></div>
+        {% if incident.closed_at %}
+        <div class="detail-row"><span class="k">Cerrado</span><span class="v mono">{{ incident.closed_at.strftime('%d/%m/%Y %H:%M') }}</span></div>
+        {% endif %}
+        {% if incident.event_id %}
+        <div class="detail-row"><span class="k">Evento vinculado</span><span class="v"><a href="{{ url_for('events.detail', event_id=incident.event_id) }}" style="color:var(--blue);">#{{ incident.event_id }} →</a></span></div>
+        {% endif %}
+      </div>
+      <div class="detail-desc">{{ incident.description or 'Sin descripción.' }}</div>
+    </div>
+
+    <div class="panel" style="margin-top:18px;">
+      <div class="panel-title">Bitácora de cambios</div>
+      <div class="panel-desc">Trazabilidad completa del incidente (RF-07)</div>
+      <ul class="timeline">
+        {% for log in logs %}
+        <li>
+          <div class="tl-action">{{ log.action }}</div>
+          <div class="tl-detail">{{ log.detail }}</div>
+          <div class="tl-meta">{{ log.user.name if log.user else 'Sistema' }} · {{ log.timestamp.strftime('%d/%m/%Y %H:%M') }}</div>
+        </li>
+        {% else %}
+        <li><div class="tl-detail">Sin registros.</div></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- Derecha: acciones -->
+  <div class="panel">
+    <div class="panel-title">Actualizar incidente</div>
+    <div class="panel-desc">Cambiá el estado, reasigná o dejá una nota.</div>
+
+    <form method="post" action="{{ url_for('incidents.update', incident_id=incident.id) }}">
+      {{ form.csrf_token }}
+      <div class="field">
+        <label>Estado</label>
+        {{ form.status() }}
+      </div>
+      <div class="field">
+        <label>Asignado a</label>
+        {{ form.assignee_id() }}
+      </div>
+      <div class="field">
+        <label>Nota (opcional)</label>
+        <input type="text" name="note" placeholder="Comentario para la bitácora…">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Guardar cambios</button>
+    </form>
+
+    {% if incident.status != 'cerrado' %}
+    <form method="post" action="{{ url_for('incidents.update', incident_id=incident.id) }}" style="margin-top:12px;">
+      {{ form.csrf_token }}
+      <input type="hidden" name="status" value="cerrado">
+      <input type="hidden" name="assignee_id" value="{{ incident.assignee_id or 0 }}">
+      <input type="hidden" name="note" value="Incidente cerrado.">
+      <button type="submit" class="btn btn-danger" style="width:100%; justify-content:center;">✓ Cerrar incidente</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

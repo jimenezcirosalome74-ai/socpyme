@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOC-PYME Solutions · Ciberseguridad para PYMES</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --navy: #0A2540;
+    --navy-deep: #05152B;
+    --blue: #0E6BA8;
+    --cyan: #2EC4B6;
+    --cyan-pale: #E8F9F8;
+    --white: #FFFFFF;
+    --off-white: #F7FAFC;
+    --gray-100: #EDF2F7;
+    --gray-200: #E2E8F0;
+    --gray-400: #94A3B8;
+    --gray-600: #475569;
+    --gray-800: #1E293B;
+    --red: #EF4444;
+    --green: #10B981;
+    --yellow: #F59E0B;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--white);
+    color: var(--gray-800);
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* === NAV === */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 6%;
+    height: 70px;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--gray-200);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+
+  .logo-icon {
+    width: 38px; height: 38px;
+    background: var(--navy);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .logo-icon::after {
+    content: '🛡';
+    font-size: 18px;
+    filter: brightness(0) invert(1);
+  }
+
+  .logo-name {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--navy);
+    letter-spacing: -0.5px;
+  }
+
+  .logo-name span {
+    color: var(--cyan);
+  }
+
+  nav ul {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+
+  nav ul a {
+    text-decoration: none;
+    color: var(--gray-600);
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+
+  nav ul a:hover { color: var(--navy); }
+
+  .nav-btn {
+    background: var(--navy);
+    color: var(--white) !important;
+    padding: 10px 22px;
+    border-radius: 6px;
+    font-weight: 600 !important;
+    transition: all 0.2s !important;
+  }
+
+  .nav-btn:hover {
+    background: var(--blue) !important;
+    transform: translateY(-1px);
+  }
+
+  /* === HERO === */
+  .hero {
+    padding: 140px 6% 100px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+    background: linear-gradient(180deg, var(--off-white) 0%, var(--white) 100%);
+  }
+
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--cyan-pale);
+    color: var(--cyan);
+    border: 1px solid rgba(46,196,182,0.3);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 24px;
+  }
+
+  .hero-tag-dot {
+    width: 6px; height: 6px;
+    background: var(--cyan);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity:1; }
+    50% { opacity:0.3; }
+  }
+
+  .hero h1 {
+    font-size: clamp(36px, 4.5vw, 60px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -2px;
+    color: var(--navy);
+    margin-bottom: 20px;
+  }
+
+  .hero h1 .hl {
+    background: linear-gradient(135deg, var(--blue), var(--cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    font-size: 17px;
+    color: var(--gray-600);
+    line-height: 1.75;
+    margin-bottom: 40px;
+    font-weight: 400;
+  }
+
+  .hero-ctas {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 48px;
+  }
+
+  .btn-fill {
+    background: var(--navy);
+    color: var(--white);
+    border: none;
+    padding: 14px 28px;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-fill:hover {
+    background: var(--blue);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(10,37,64,0.25);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--navy);
+    border: 1.5px solid var(--gray-200);
+    padding: 14px 28px;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-outline:hover {
+    border-color: var(--navy);
+    transform: translateY(-1px);
+  }
+
+  .trust-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .trust-avatars {
+    display: flex;
+  }
+
+  .trust-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--white);
+    margin-left: -8px;
+    background: var(--navy);
+    display: flex; align-items:center; justify-content:center;
+    font-size: 12px;
+    color: var(--white);
+    font-weight: 700;
+  }
+
+  .trust-avatar:first-child { margin-left: 0; }
+  .trust-avatar.a2 { background: var(--blue); }
+  .trust-avatar.a3 { background: var(--cyan); }
+  .trust-avatar.a4 { background: #6366F1; }
+
+  .trust-text {
+    font-size: 13px;
+    color: var(--gray-600);
+  }
+
+  .trust-text strong { color: var(--gray-800); }
+
+  /* === HERO DASHBOARD MOCKUP === */
+  .hero-right {
+    position: relative;
+  }
+
+  .dashboard-card {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(10,37,64,0.12), 0 4px 16px rgba(10,37,64,0.06);
+  }
+
+  .dashboard-header {
+    background: var(--navy);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .dash-dots { display:flex; gap:5px; }
+  .dash-dot { width:9px; height:9px; border-radius:50%; }
+  .dash-dot.r { background:#FF5F57; }
+  .dash-dot.y { background:#FEBC2E; }
+  .dash-dot.g { background:#28C840; }
+
+  .dash-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 1px;
+    margin-left: 6px;
+  }
+
+  .dashboard-body {
+    padding: 24px 20px;
+  }
+
+  .dash-kpis {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .kpi {
+    background: var(--off-white);
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+
+  .kpi-label {
+    font-size: 10px;
+    color: var(--gray-400);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+
+  .kpi-val {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--navy);
+    font-family: 'DM Mono', monospace;
+    line-height: 1;
+  }
+
+  .kpi-val.danger { color: var(--red); }
+  .kpi-val.ok { color: var(--green); }
+  .kpi-trend {
+    font-size: 10px;
+    color: var(--green);
+    margin-top: 4px;
+    font-weight: 600;
+  }
+  .kpi-trend.up-bad { color: var(--red); }
+
+  .dash-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gray-400);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  .event-list { margin-bottom: 16px; }
+
+  .event-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    font-size: 12px;
+    transition: background 0.2s;
+  }
+
+  .event-row:hover { background: var(--off-white); }
+
+  .event-badge {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .badge-crit { background: #FEE2E2; color: var(--red); }
+  .badge-warn { background: #FEF3C7; color: var(--yellow); }
+  .badge-info { background: #D1FAE5; color: var(--green); }
+
+  .event-desc { color: var(--gray-600); flex:1; }
+  .event-time { color: var(--gray-400); font-size: 10px; font-family: 'DM Mono', monospace; }
+
+  .bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 5px;
+    height: 60px;
+  }
+
+  .bar {
+    flex: 1;
+    background: var(--gray-100);
+    border-radius: 4px 4px 0 0;
+    position: relative;
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+
+  .bar-fill {
+    position: absolute;
+    bottom:0; left:0; right:0;
+    background: linear-gradient(180deg, var(--cyan), var(--blue));
+    border-radius: 4px 4px 0 0;
+  }
+
+  .bar.active .bar-fill { background: linear-gradient(180deg, var(--yellow), #F97316); }
+
+  .floating-badge {
+    position: absolute;
+    top: -40px; right: -20px;
+    background: var(--green);
+    color: var(--white);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: 0 8px 24px rgba(16,185,129,0.3);
+    white-space: nowrap;
+  }
+
+  .floating-badge::before {
+    content: '✓ ';
+  }
+
+  /* === FEATURES GRID === */
+  .features {
+    padding: 100px 6%;
+    background: var(--navy-deep);
+    color: var(--white);
+  }
+
+  .features .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .features h2 {
+    font-size: clamp(28px, 4vw, 46px);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -1.5px;
+    margin-bottom: 60px;
+    max-width: 600px;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px;
+    background: rgba(255,255,255,0.04);
+  }
+
+  .feature-block {
+    background: var(--navy-deep);
+    padding: 40px 36px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s;
+  }
+
+  .feature-block:hover {
+    background: rgba(46,196,182,0.05);
+  }
+
+  .feature-icon-wrap {
+    width: 52px; height: 52px;
+    border-radius: 12px;
+    background: rgba(46,196,182,0.1);
+    border: 1px solid rgba(46,196,182,0.2);
+    display: flex; align-items:center; justify-content:center;
+    font-size: 22px;
+    margin-bottom: 20px;
+    transition: all 0.3s;
+  }
+
+  .feature-block:hover .feature-icon-wrap {
+    background: rgba(46,196,182,0.2);
+    border-color: var(--cyan);
+  }
+
+  .feature-block h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    letter-spacing: -0.5px;
+  }
+
+  .feature-block p {
+    font-size: 14px;
+    color: var(--gray-400);
+    line-height: 1.75;
+  }
+
+  .feature-tag {
+    display: inline-block;
+    margin-top: 16px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border: 1px solid rgba(46,196,182,0.3);
+    border-radius: 4px;
+  }
+
+  /* === PLANS === */
+  .plans-section {
+    padding: 100px 6%;
+    background: var(--off-white);
+  }
+
+  .plans-section .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .plans-section h2 {
+    font-size: clamp(28px, 4vw, 46px);
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    color: var(--navy);
+    margin-bottom: 8px;
+  }
+
+  .plans-section .sub {
+    color: var(--gray-600);
+    font-size: 16px;
+    margin-bottom: 56px;
+  }
+
+  .plans-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .plan {
+    background: var(--white);
+    border: 1.5px solid var(--gray-200);
+    border-radius: 14px;
+    padding: 36px;
+    transition: all 0.3s;
+  }
+
+  .plan.featured {
+    border-color: var(--navy);
+    position: relative;
+    box-shadow: 0 20px 60px rgba(10,37,64,0.12);
+  }
+
+  .plan:hover { transform: translateY(-6px); box-shadow: 0 24px 60px rgba(10,37,64,0.1); }
+
+  .plan-badge {
+    position: absolute;
+    top: -14px; left: 50%; transform: translateX(-50%);
+    background: var(--navy);
+    color: var(--white);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding: 5px 16px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  .plan-tier {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .plan-amount {
+    font-size: 44px;
+    font-weight: 800;
+    color: var(--navy);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: -2px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .plan-cop {
+    font-size: 13px;
+    color: var(--gray-400);
+    margin-bottom: 28px;
+  }
+
+  .divider { height:1px; background: var(--gray-200); margin-bottom: 24px; }
+
+  .plan-list { list-style:none; margin-bottom: 32px; }
+
+  .plan-list li {
+    font-size: 14px;
+    color: var(--gray-600);
+    padding: 8px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    border-bottom: 1px solid var(--gray-100);
+  }
+
+  .plan-list li:last-child { border-bottom: none; }
+
+  .check-icon {
+    width: 18px; height: 18px;
+    background: var(--cyan-pale);
+    border-radius: 50%;
+    display: flex; align-items:center; justify-content:center;
+    font-size: 10px;
+    color: var(--cyan);
+    flex-shrink: 0;
+    margin-top: 1px;
+    font-weight: 700;
+  }
+
+  .plan-action {
+    width: 100%;
+    padding: 14px;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .plan-action.outline {
+    background: transparent;
+    border: 1.5px solid var(--gray-200);
+    color: var(--navy);
+  }
+
+  .plan-action.outline:hover {
+    border-color: var(--navy);
+  }
+
+  .plan-action.fill {
+    background: var(--navy);
+    border: none;
+    color: var(--white);
+  }
+
+  .plan-action.fill:hover {
+    background: var(--blue);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(10,37,64,0.3);
+  }
+
+  /* === PROCESS === */
+  .process {
+    padding: 100px 6%;
+  }
+
+  .process .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .process h2 {
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    color: var(--navy);
+    margin-bottom: 60px;
+  }
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    position: relative;
+  }
+
+  .steps::before {
+    content:'';
+    position:absolute;
+    top: 30px; left: 10%; right: 10%;
+    height: 1px;
+    background: linear-gradient(90deg, var(--cyan), var(--blue));
+    z-index:0;
+  }
+
+  .step {
+    text-align: center;
+    padding: 0 24px;
+    position: relative;
+    z-index:1;
+  }
+
+  .step-num {
+    width: 60px; height: 60px;
+    background: var(--navy);
+    border-radius: 50%;
+    display: flex; align-items:center; justify-content:center;
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--cyan);
+    margin: 0 auto 20px;
+    border: 3px solid var(--white);
+    box-shadow: 0 0 0 1px var(--gray-200);
+  }
+
+  .step h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 8px;
+  }
+
+  .step p {
+    font-size: 13px;
+    color: var(--gray-600);
+    line-height: 1.65;
+  }
+
+  /* === CTA FINAL === */
+  .cta-final {
+    margin: 0 6% 80px;
+    background: linear-gradient(135deg, var(--navy-deep), var(--navy));
+    border-radius: 20px;
+    padding: 80px 60px;
+    text-align: center;
+    color: var(--white);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-final::before {
+    content:'';
+    position:absolute;
+    top:-100px; right:-100px;
+    width:400px; height:400px;
+    background: radial-gradient(circle, rgba(46,196,182,0.1), transparent 70%);
+    pointer-events:none;
+  }
+
+  .cta-final h2 {
+    font-size: clamp(28px, 4vw, 48px);
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    margin-bottom: 16px;
+  }
+
+  .cta-final p {
+    color: rgba(255,255,255,0.65);
+    font-size: 16px;
+    margin-bottom: 40px;
+    line-height: 1.7;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .cta-final-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .btn-cyan {
+    background: var(--cyan);
+    color: var(--navy);
+    border: none;
+    padding: 16px 32px;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-cyan:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(46,196,182,0.35);
+  }
+
+  .btn-white-ghost {
+    background: transparent;
+    color: var(--white);
+    border: 1.5px solid rgba(255,255,255,0.25);
+    padding: 16px 32px;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-white-ghost:hover { border-color: rgba(255,255,255,0.6); }
+
+  /* === FOOTER === */
+  footer {
+    padding: 40px 6%;
+    border-top: 1px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .footer-left p { font-size: 13px; color: var(--gray-400); margin-top: 6px; }
+
+  .footer-links {
+    display: flex;
+    gap: 20px;
+  }
+
+  .footer-links a {
+    font-size: 13px;
+    color: var(--gray-400);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover { color: var(--navy); }
+
+  /* ANIMATIONS */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="logo" href="#">
+    <div class="logo-icon"></div>
+    <span class="logo-name">SOC-<span>PYME</span></span>
+  </a>
+  <ul>
+    <li><a href="#">Plataforma</a></li>
+    <li><a href="#">Servicios</a></li>
+    <li><a href="#">Planes</a></li>
+    <li><a href="#">Empresa</a></li>
+    <li><a href="#" class="nav-btn">Comenzar gratis →</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-left">
+    <div class="hero-tag">
+      <div class="hero-tag-dot"></div>
+      Monitoreo activo · Latinoamérica
+    </div>
+    <h1>Protegé tu empresa.<br>Sin complicaciones,<br><span class="hl">sin costos enterprise.</span></h1>
+    <p class="hero-sub">La plataforma de ciberseguridad diseñada para PYMES. Monitoreá eventos, detectá amenazas y gestioná incidentes desde un solo lugar.</p>
+    <div class="hero-ctas">
+      <button class="btn-fill">Probar 14 días gratis →</button>
+      <button class="btn-outline">Ver demo en vivo</button>
+    </div>
+    <div class="trust-row">
+      <div class="trust-avatars">
+        <div class="trust-avatar">JC</div>
+        <div class="trust-avatar a2">SM</div>
+        <div class="trust-avatar a3">SJ</div>
+        <div class="trust-avatar a4">JN</div>
+      </div>
+      <p class="trust-text"><strong>Equipo fundador</strong> · Medellín, Colombia</p>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="floating-badge">Sistema protegido</div>
+    <div class="dashboard-card">
+      <div class="dashboard-header">
+        <div class="dash-dots">
+          <div class="dash-dot r"></div>
+          <div class="dash-dot y"></div>
+          <div class="dash-dot g"></div>
+        </div>
+        <span class="dash-title">SOC-PYME · Dashboard · Junio 2026</span>
+      </div>
+      <div class="dashboard-body">
+        <div class="dash-kpis">
+          <div class="kpi">
+            <div class="kpi-label">Eventos hoy</div>
+            <div class="kpi-val">247</div>
+            <div class="kpi-trend">↑ +12% vs ayer</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Críticos</div>
+            <div class="kpi-val danger">3</div>
+            <div class="kpi-trend up-bad">↑ Requieren atención</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Resueltos</div>
+            <div class="kpi-val ok">244</div>
+            <div class="kpi-trend">↑ 98.8% resolución</div>
+          </div>
+        </div>
+
+        <div class="dash-section-label">Últimos eventos</div>
+        <div class="event-list">
+          <div class="event-row">
+            <span class="event-badge badge-crit">CRÍTICO</span>
+            <span class="event-desc">Acceso SSH no autorizado · Puerto 22</span>
+            <span class="event-time">14:35</span>
+          </div>
+          <div class="event-row">
+            <span class="event-badge badge-warn">AVISO</span>
+            <span class="event-desc">3 intentos fallidos · user@co</span>
+            <span class="event-time">14:33</span>
+          </div>
+          <div class="event-row">
+            <span class="event-badge badge-info">INFO</span>
+            <span class="event-desc">Login exitoso · admin · 192.168.1.10</span>
+            <span class="event-time">14:32</span>
+          </div>
+        </div>
+
+        <div class="dash-section-label">Actividad 7 días</div>
+        <div class="bar-chart">
+          <div class="bar" style="height:100%"><div class="bar-fill" style="height:35%"></div></div>
+          <div class="bar" style="height:100%"><div class="bar-fill" style="height:55%"></div></div>
+          <div class="bar" style="height:100%"><div class="bar-fill" style="height:40%"></div></div>
+          <div class="bar" style="height:100%"><div class="bar-fill" style="height:70%"></div></div>
+          <div class="bar active" style="height:100%"><div class="bar-fill" style="height:88%"></div></div>
+          <div class="bar" style="height:100%"><div class="bar-fill" style="height:62%"></div></div>
+          <div class="bar" style="height:100%"><div class="bar-fill" style="height:45%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURES DARK -->
+<section class="features">
+  <p class="section-label">Capacidades de la Plataforma</p>
+  <h2 class="reveal">Todo bajo control,<br>todo en un lugar.</h2>
+
+  <div class="features-grid">
+    <div class="feature-block reveal">
+      <div class="feature-icon-wrap">📊</div>
+      <h3>Dashboard en tiempo real</h3>
+      <p>Visualizá el estado de tu seguridad al instante. Métricas, alertas activas, incidentes y tendencias en un panel diseñado para decisiones rápidas.</p>
+      <span class="feature-tag">RF-06 · Alta prioridad</span>
+    </div>
+    <div class="feature-block reveal">
+      <div class="feature-icon-wrap">🚨</div>
+      <h3>Alertas tempranas &lt;30s</h3>
+      <p>Recibí notificaciones por correo, SMS o webhook en menos de 30 segundos cuando se detecta un evento de riesgo que supera los umbrales configurados.</p>
+      <span class="feature-tag">RF-05 · Alta prioridad</span>
+    </div>
+    <div class="feature-block reveal">
+      <div class="feature-icon-wrap">🎫</div>
+      <h3>Gestión de incidentes</h3>
+      <p>Abrí, asigná, escalá y cerrá tickets de incidentes vinculados a eventos detectados. Trazabilidad completa de cada caso desde el inicio hasta el cierre.</p>
+      <span class="feature-tag">RF-07 · Alta prioridad</span>
+    </div>
+    <div class="feature-block reveal">
+      <div class="feature-icon-wrap">🔐</div>
+      <h3>Seguridad de extremo a extremo</h3>
+      <p>Cifrado AES-256 en reposo, TLS 1.3 en tránsito, roles y permisos mínimos, y bitácora de auditoría inmutable para cada acción del sistema.</p>
+      <span class="feature-tag">RNF-03 · Seguridad</span>
+    </div>
+  </div>
+</section>
+
+<!-- PLANS -->
+<section class="plans-section">
+  <p class="section-label">Planes y Precios</p>
+  <h2 class="reveal">Simple, transparente, accesible.</h2>
+  <p class="sub reveal">Sin cargos ocultos. Sin contratos anuales forzados. Cambiá de plan cuando quieras.</p>
+
+  <div class="plans-row">
+    <div class="plan reveal">
+      <div class="plan-tier">Básico</div>
+      <div class="plan-amount">$116K</div>
+      <div class="plan-cop">COP al mes</div>
+      <div class="divider"></div>
+      <ul class="plan-list">
+        <li><div class="check-icon">✓</div>Monitoreo en tiempo real</li>
+        <li><div class="check-icon">✓</div>Dashboard interactivo</li>
+        <li><div class="check-icon">✓</div>Reportes mensuales PDF</li>
+        <li><div class="check-icon">✓</div>Soporte estándar</li>
+      </ul>
+      <button class="plan-action outline">Comenzar gratis</button>
+    </div>
+
+    <div class="plan featured reveal">
+      <div class="plan-badge">⭐ MÁS POPULAR</div>
+      <div class="plan-tier">Estándar</div>
+      <div class="plan-amount">$316K</div>
+      <div class="plan-cop">COP al mes</div>
+      <div class="divider"></div>
+      <ul class="plan-list">
+        <li><div class="check-icon">✓</div>Todo del plan Básico</li>
+        <li><div class="check-icon">✓</div>Alertas configurables</li>
+        <li><div class="check-icon">✓</div>Análisis avanzado de eventos</li>
+        <li><div class="check-icon">✓</div>Gestión de incidentes</li>
+        <li><div class="check-icon">✓</div>Reportes detallados</li>
+      </ul>
+      <button class="plan-action fill">Comenzar gratis</button>
+    </div>
+
+    <div class="plan reveal">
+      <div class="plan-tier">Premium</div>
+      <div class="plan-amount">$596K</div>
+      <div class="plan-cop">COP al mes</div>
+      <div class="divider"></div>
+      <ul class="plan-list">
+        <li><div class="check-icon">✓</div>Todo del plan Estándar</li>
+        <li><div class="check-icon">✓</div>Soporte prioritario 24/7</li>
+        <li><div class="check-icon">✓</div>Onboarding asistido</li>
+        <li><div class="check-icon">✓</div>Personalización de reglas</li>
+        <li><div class="check-icon">✓</div>Integración logs externos</li>
+      </ul>
+      <button class="plan-action outline">Contactar ventas</button>
+    </div>
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section class="process">
+  <p class="section-label">¿Cómo funciona?</p>
+  <h2 class="reveal">En 4 pasos, protegés tu empresa.</h2>
+  <div class="steps">
+    <div class="step reveal">
+      <div class="step-num">01</div>
+      <h3>Creá tu cuenta</h3>
+      <p>Registrate en minutos. Sin tarjeta de crédito. 14 días de prueba completa.</p>
+    </div>
+    <div class="step reveal">
+      <div class="step-num">02</div>
+      <h3>Conectá tu infraestructura</h3>
+      <p>Integrá tus servidores y dispositivos vía API REST o syslog.</p>
+    </div>
+    <div class="step reveal">
+      <div class="step-num">03</div>
+      <h3>Configurá tus alertas</h3>
+      <p>Definí umbrales de riesgo y canales de notificación para tu equipo.</p>
+    </div>
+    <div class="step reveal">
+      <div class="step-num">04</div>
+      <h3>Monitoreá y respondé</h3>
+      <p>Recibí alertas, gestioná incidentes y generá reportes para tu gerencia.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<div class="cta-final reveal">
+  <h2>Protegé tu empresa hoy.<br>Sin excusas de presupuesto.</h2>
+  <p>14 días de prueba completa. Sin tarjeta de crédito. Sin compromisos.</p>
+  <div class="cta-final-actions">
+    <button class="btn-cyan">Crear cuenta gratis →</button>
+    <button class="btn-white-ghost">Agendar una demo</button>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-left">
+    <div class="logo" style="margin-bottom:6px;">
+      <div class="logo-icon"></div>
+      <span class="logo-name">SOC-<span>PYME</span></span>
+    </div>
+    <p>© 2026 SOC-PYME Solutions · Medellín, Colombia</p>
+  </div>
+  <div class="footer-links">
+    <a href="#">Privacidad</a>
+    <a href="#">Términos</a>
+    <a href="#">Soporte</a>
+    <a href="#">Contacto</a>
+  </div>
+</footer>
+
+<script>
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if(e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('visible'), i * 100);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>

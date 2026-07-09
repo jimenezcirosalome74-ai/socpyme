@@ -1,0 +1,83 @@
+{% extends "base_app.html" %}
+{% set active_page = 'alerts' %}
+{% block title %}Alertas · SOC-PYME{% endblock %}
+{% block page_title %}Reglas de alerta{% endblock %}
+{% block page_sub %}Configuración de umbrales de notificación (RF-05){% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h2>Reglas de alerta</h2>
+    <p>Definí umbrales: cuando se superan, se genera una notificación en la campanita.</p>
+  </div>
+  <a href="{{ url_for('alerts.new') }}" class="btn btn-primary">＋ Nueva regla</a>
+</div>
+
+<div class="detail-grid">
+  <!-- Reglas -->
+  <div class="panel" style="padding:0;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Regla</th>
+          <th>Severidad</th>
+          <th>Condición</th>
+          <th class="hide-sm">Canal</th>
+          <th>Estado</th>
+          <th style="text-align:right;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rules %}
+        <tr>
+          <td><strong>{{ r.name }}</strong></td>
+          <td><span class="badge sev-{{ r.target_severity }}">{{ r.severity_label }}</span></td>
+          <td class="mono">≥ {{ r.threshold }} / {{ r.window_minutes }} min</td>
+          <td class="hide-sm">{{ r.channel_label }}</td>
+          <td>
+            <span class="chip {{ 'on' if r.active else 'off' }}">{{ 'Activa' if r.active else 'Inactiva' }}</span>
+          </td>
+          <td>
+            <div class="row-actions">
+              <!-- Toggle -->
+              <form method="post" action="{{ url_for('alerts.toggle', rule_id=r.id) }}" title="{{ 'Desactivar' if r.active else 'Activar' }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="toggle {{ 'on' if r.active else '' }}" aria-label="Activar/Desactivar">
+                  <span class="toggle-track"></span>
+                </button>
+              </form>
+              <a href="{{ url_for('alerts.edit', rule_id=r.id) }}" class="btn btn-ghost btn-sm">Editar</a>
+              <!-- Eliminar con confirmación -->
+              <form method="post" action="{{ url_for('alerts.delete', rule_id=r.id) }}"
+                    onsubmit="return confirm('¿Eliminar la regla «{{ r.name }}»? Esta acción no se puede deshacer.');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="empty-state"><div class="ic">🚨</div>No hay reglas de alerta. Creá la primera con «Nueva regla».</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Bitácora de cambios -->
+  <div class="panel">
+    <div class="panel-title">Bitácora de cambios</div>
+    <div class="panel-desc">Últimas modificaciones a las reglas</div>
+    <ul class="timeline">
+      {% for log in logs %}
+      <li>
+        <div class="tl-action">{{ log.action }}</div>
+        <div class="tl-detail">{{ log.detail }}</div>
+        <div class="tl-meta">{{ log.user.name if log.user else 'Sistema' }} · {{ log.timestamp.strftime('%d/%m/%Y %H:%M') }}</div>
+      </li>
+      {% else %}
+      <li><div class="tl-detail">Sin cambios registrados.</div></li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

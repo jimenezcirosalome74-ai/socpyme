@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- HERO -->
+<div class="hero" id="plataforma">
+  <div class="hero-left">
+    <div class="hero-tag">
+      <div class="hero-tag-dot"></div>
+      Monitoreo activo · Latinoamérica
+    </div>
+    <h1>Protegé tu empresa.<br>Sin complicaciones,<br><span class="hl">sin costos enterprise.</span></h1>
+    <p class="hero-sub">La plataforma de ciberseguridad diseñada para PYMES. Monitoreá eventos, detectá amenazas y gestioná incidentes desde un solo lugar.</p>
+    <div class="hero-ctas">
+      <a class="btn-fill" href="{{ url_for('auth.register') }}">Probar 14 días gratis →</a>
+      <a class="btn-outline" href="{{ url_for('auth.login', demo=1) }}">Ver demo en vivo</a>
+    </div>
+    <div class="trust-row">
+      <div class="trust-avatars">
+        <div class="trust-avatar">JC</div>
+        <div class="trust-avatar a2">SM</div>
+        <div class="trust-avatar a3">SJ</div>
+        <div class="trust-avatar a4">JN</div>
+      </div>
+      <p class="trust-text"><strong>Equipo fundador</strong> · Medellín, Colombia</p>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="floating-badge">Sistema protegido</div>
+    <div class="dashboard-card">
+      <div class="dashboard-header">
+        <div class="dash-dots">
+          <div class="dash-dot r"></div>
+          <div class="dash-dot y"></div>
+          <div class="dash-dot g"></div>
+        </div>
+        <span class="dash-title">SOC-PYME · Dashboard · En vivo</span>
+      </div>
+      <div class="dashboard-body">
+        <div class="dash-kpis">
+          <div class="kpi">
+            <div class="kpi-label">Eventos hoy</div>
+            <div class="kpi-val">247</div>
+            <div class="kpi-trend">↑ +12% vs ayer</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Críticos</div>
+            <div class="kpi-val danger">3</div>
+            <div class="kpi-trend up-bad">↑ Requieren atención</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Resueltos</div>
+            <div class="kpi-val ok">244</div>
+            <div class="kpi-trend">↑ 98.8% resolución</div>
+          </div>
+        </div>
+
+        <div class="dash-section-label">Últimos eventos</div>
+        <div class="event-list">
+          <div class="event-row">
+            <span class="event-badge badge-crit">CRÍTICO</span>
+            <span class="event-desc">Acceso SSH no autorizado · Puerto 22</span>
+            <span class="event-time">14:35</span>
+          </div>
+          <div class="event-row">
+            <span class="event-badge badge-warn">AVISO</span>
+            <span class="event-desc">3 intentos fallidos · user@co</span>
+            <span class="event-time">14:33</span>
+          </div>
+          <div class="event-row">
+            <span class="event-badge badge-info">INFO</span>
+            <span class="event-desc">Login exitoso · admin · 192.168.1.10</span>
+            <span class="event-time">14:32</span>
+          </div>
+        </div>
+
+        <div class="dash-section-label">Actividad 7 días</div>
+        <div class="bar-chart">
+          <div class="bar" style="height:100%"><div class="bar-fill" style="height:35%"></div></div>
+          <div class="bar" style="height:100%"><div class="bar-fill" style="height:55%"></div></div>
+          <div class="bar" style="height:100%"><div class="bar-fill" style="height:40%"></div></div>
+          <div class="bar" style="height:100%"><div class="bar-fill" style="height:70%"></div></div>
+          <div class="bar active" style="height:100%"><div class="bar-fill" style="height:88%"></div></div>
+          <div class="bar" style="height:100%"><div class="bar-fill" style="height:62%"></div></div>
+          <div class="bar" style="height:100%"><div class="bar-fill" style="height:45%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURES DARK -->
+<section class="features" id="servicios">
+  <p class="section-label">Capacidades de la Plataforma</p>
+  <h2 class="reveal">Todo bajo control,<br>todo en un lugar.</h2>
+
+  <div class="features-grid">
+    <div class="feature-block reveal">
+      <div class="feature-icon-wrap">📊</div>
+      <h3>Dashboard en tiempo real</h3>
+      <p>Visualizá el estado de tu seguridad al instante. Métricas, alertas activas, incidentes y tendencias en un panel diseñado para decisiones rápidas.</p>
+      <span class="feature-tag">RF-06 · Alta prioridad</span>
+    </div>
+    <div class="feature-block reveal">
+      <div class="feature-icon-wrap">🚨</div>
+      <h3>Alertas tempranas &lt;30s</h3>
+      <p>Recibí notificaciones cuando se detecta un evento de riesgo que supera los umbrales configurados por tu equipo.</p>
+      <span class="feature-tag">RF-05 · Alta prioridad</span>
+    </div>
+    <div class="feature-block reveal">
+      <div class="feature-icon-wrap">🎫</div>
+      <h3>Gestión de incidentes</h3>
+      <p>Abrí, asigná, escalá y cerrá tickets de incidentes vinculados a eventos detectados. Trazabilidad completa de cada caso desde el inicio hasta el cierre.</p>
+      <span class="feature-tag">RF-07 · Alta prioridad</span>
+    </div>
+    <div class="feature-block reveal">
+      <div class="feature-icon-wrap">🔐</div>
+      <h3>Seguridad de extremo a extremo</h3>
+      <p>Contraseñas cifradas, protección CSRF, roles y permisos mínimos, y bitácora de auditoría para cada acción del sistema.</p>
+      <span class="feature-tag">RNF-03 · Seguridad</span>
+    </div>
+  </div>
+</section>
+
+<!-- PLANS -->
+<section class="plans-section" id="planes">
+  <p class="section-label">Planes y Precios</p>
+  <h2 class="reveal">Simple, transparente, accesible.</h2>
+  <p class="sub reveal">Sin cargos ocultos. Sin contratos anuales forzados. Cambiá de plan cuando quieras.</p>
+
+  <div class="plans-row">
+    <div class="plan reveal">
+      <div class="plan-tier">Básico</div>
+      <div class="plan-amount">$116K</div>
+      <div class="plan-cop">COP al mes</div>
+      <div class="divider"></div>
+      <ul class="plan-list">
+        <li><div class="check-icon">✓</div>Monitoreo en tiempo real</li>
+        <li><div class="check-icon">✓</div>Dashboard interactivo</li>
+        <li><div class="check-icon">✓</div>Reportes mensuales PDF</li>
+        <li><div class="check-icon">✓</div>Soporte estándar</li>
+      </ul>
+      <a class="plan-action outline" href="{{ url_for('auth.register') }}">Comenzar gratis</a>
+    </div>
+
+    <div class="plan featured reveal">
+      <div class="plan-badge">⭐ MÁS POPULAR</div>
+      <div class="plan-tier">Estándar</div>
+      <div class="plan-amount">$316K</div>
+      <div class="plan-cop">COP al mes</div>
+      <div class="divider"></div>
+      <ul class="plan-list">
+        <li><div class="check-icon">✓</div>Todo del plan Básico</li>
+        <li><div class="check-icon">✓</div>Alertas configurables</li>
+        <li><div class="check-icon">✓</div>Análisis avanzado de eventos</li>
+        <li><div class="check-icon">✓</div>Gestión de incidentes</li>
+        <li><div class="check-icon">✓</div>Reportes detallados</li>
+      </ul>
+      <a class="plan-action fill" href="{{ url_for('auth.register') }}">Comenzar gratis</a>
+    </div>
+
+    <div class="plan reveal">
+      <div class="plan-tier">Premium</div>
+      <div class="plan-amount">$596K</div>
+      <div class="plan-cop">COP al mes</div>
+      <div class="divider"></div>
+      <ul class="plan-list">
+        <li><div class="check-icon">✓</div>Todo del plan Estándar</li>
+        <li><div class="check-icon">✓</div>Soporte prioritario 24/7</li>
+        <li><div class="check-icon">✓</div>Onboarding asistido</li>
+        <li><div class="check-icon">✓</div>Personalización de reglas</li>
+        <li><div class="check-icon">✓</div>Integración logs externos</li>
+      </ul>
+      <a class="plan-action outline" href="{{ url_for('auth.register') }}">Contactar ventas</a>
+    </div>
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section class="process">
+  <p class="section-label">¿Cómo funciona?</p>
+  <h2 class="reveal">En 4 pasos, protegés tu empresa.</h2>
+  <div class="steps">
+    <div class="step reveal">
+      <div class="step-num">01</div>
+      <h3>Creá tu cuenta</h3>
+      <p>Registrate en minutos. Sin tarjeta de crédito. 14 días de prueba completa.</p>
+    </div>
+    <div class="step reveal">
+      <div class="step-num">02</div>
+      <h3>Conectá tu infraestructura</h3>
+      <p>Integrá tus servidores y dispositivos vía API REST o syslog.</p>
+    </div>
+    <div class="step reveal">
+      <div class="step-num">03</div>
+      <h3>Configurá tus alertas</h3>
+      <p>Definí umbrales de riesgo y canales de notificación para tu equipo.</p>
+    </div>
+    <div class="step reveal">
+      <div class="step-num">04</div>
+      <h3>Monitoreá y respondé</h3>
+      <p>Recibí alertas, gestioná incidentes y generá reportes para tu gerencia.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<div class="cta-final reveal" id="empresa">
+  <h2>Protegé tu empresa hoy.<br>Sin excusas de presupuesto.</h2>
+  <p>14 días de prueba completa. Sin tarjeta de crédito. Sin compromisos.</p>
+  <div class="cta-final-actions">
+    <a class="btn-cyan" href="{{ url_for('auth.register') }}">Crear cuenta gratis →</a>
+    <a class="btn-white-ghost" href="{{ url_for('auth.login', demo=1) }}">Ver demo en vivo</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-left">
+    <div class="logo" style="margin-bottom:6px;">
+      <div class="logo-icon"></div>
+      <span class="logo-name">SOC-<span>PYME</span></span>
+    </div>
+    <p>© 2026 SOC-PYME Solutions · Medellín, Colombia</p>
+  </div>
+  <div class="footer-links">
+    <a href="#plataforma">Privacidad</a>
+    <a href="#planes">Términos</a>
+    <a href="{{ url_for('auth.login') }}">Soporte</a>
+    <a href="#empresa">Contacto</a>
+  </div>
+</footer>
+{% endblock %}

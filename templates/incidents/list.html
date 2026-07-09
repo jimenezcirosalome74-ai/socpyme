@@ -1,0 +1,71 @@
+{% extends "base_app.html" %}
+{% set active_page = 'incidents' %}
+{% block title %}Incidentes · SOC-PYME{% endblock %}
+{% block page_title %}Incidentes{% endblock %}
+{% block page_sub %}Gestión y seguimiento de tickets{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h2>Gestión de incidentes</h2>
+    <p>Abrí, asigná, escalá y cerrá tickets con trazabilidad completa.</p>
+  </div>
+  <a href="{{ url_for('incidents.new') }}" class="btn btn-primary">＋ Nuevo incidente</a>
+</div>
+
+<!-- FILTROS -->
+<form method="get" action="{{ url_for('incidents.list_incidents') }}" class="filter-bar">
+  <div class="field">
+    <label>Estado</label>
+    <select name="status">
+      <option value="">Todos</option>
+      {% for st in statuses %}
+      <option value="{{ st }}" {% if filters.status == st %}selected{% endif %}>{{ st|replace('_',' ')|capitalize }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label>Severidad</label>
+    <select name="severity">
+      <option value="">Todas</option>
+      {% for s in severities %}
+      <option value="{{ s }}" {% if filters.severity == s %}selected{% endif %}>{{ s|capitalize }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+    <a href="{{ url_for('incidents.list_incidents') }}" class="btn btn-ghost btn-sm">Limpiar</a>
+  </div>
+</form>
+
+<!-- TABLA -->
+<div class="panel" style="padding:0;">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Título</th>
+        <th>Severidad</th>
+        <th>Estado</th>
+        <th class="hide-sm">Asignado a</th>
+        <th class="hide-sm">Creado</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for inc in incidents %}
+      <tr class="clickable" onclick="location.href='{{ url_for('incidents.detail', incident_id=inc.id) }}'">
+        <td class="mono">#{{ inc.id }}</td>
+        <td>{{ inc.title }}</td>
+        <td><span class="badge sev-{{ inc.severity }}">{{ inc.severity_label }}</span></td>
+        <td><span class="badge st-{{ inc.status }}">{{ inc.status_label }}</span></td>
+        <td class="hide-sm">{{ inc.assignee.name if inc.assignee else '— Sin asignar —' }}</td>
+        <td class="mono hide-sm">{{ inc.created_at.strftime('%d/%m %H:%M') }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="empty-state"><div class="ic">🎫</div>No hay incidentes. Creá uno desde un evento o con el botón «Nuevo incidente».</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

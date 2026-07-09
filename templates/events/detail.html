@@ -1,0 +1,65 @@
+{% extends "base_app.html" %}
+{% set active_page = 'events' %}
+{% block title %}Evento #{{ event.id }} · SOC-PYME{% endblock %}
+{% block page_title %}Evento #{{ event.id }}{% endblock %}
+{% block page_sub %}Detalle del evento de seguridad{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h2>{{ event.event_type }}</h2>
+    <p>
+      <span class="badge sev-{{ event.severity }}">{{ event.severity_label }}</span>
+      <span class="badge st-{{ event.status }}">{{ event.status_label }}</span>
+    </p>
+  </div>
+  <a href="{{ url_for('events.list_events') }}" class="btn btn-ghost btn-sm">← Volver a eventos</a>
+</div>
+
+<div class="detail-grid">
+  <!-- Columna izquierda: datos -->
+  <div class="panel">
+    <div class="panel-title">Información del evento</div>
+    <div style="margin-top:14px;">
+      <div class="detail-row"><span class="k">ID</span><span class="v mono">#{{ event.id }}</span></div>
+      <div class="detail-row"><span class="k">Tipo</span><span class="v">{{ event.event_type }}</span></div>
+      <div class="detail-row"><span class="k">Severidad</span><span class="v"><span class="badge sev-{{ event.severity }}">{{ event.severity_label }}</span></span></div>
+      <div class="detail-row"><span class="k">Estado</span><span class="v"><span class="badge st-{{ event.status }}">{{ event.status_label }}</span></span></div>
+      <div class="detail-row"><span class="k">IP origen</span><span class="v mono">{{ event.source_ip or '—' }}</span></div>
+      <div class="detail-row"><span class="k">Fecha/Hora</span><span class="v mono">{{ event.timestamp.strftime('%d/%m/%Y %H:%M:%S') }}</span></div>
+    </div>
+    <div class="detail-desc">{{ event.description or 'Sin descripción.' }}</div>
+  </div>
+
+  <!-- Columna derecha: acciones -->
+  <div class="panel">
+    <div class="panel-title">Acciones</div>
+    <div class="panel-desc">Cambiá el estado o escalá el evento a un incidente.</div>
+
+    <form method="post" action="{{ url_for('events.change_status', event_id=event.id) }}">
+      {{ form.csrf_token }}
+      <div class="field">
+        <label>Estado del evento</label>
+        {{ form.status(class="") }}
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm" style="width:100%; justify-content:center;">Guardar estado</button>
+    </form>
+
+    <div style="height:1px; background:var(--gray-200); margin:20px 0;"></div>
+
+    <a href="{{ url_for('incidents.new', event_id=event.id) }}" class="btn btn-cyan-sm" style="width:100%; justify-content:center;">
+      🎫 Crear incidente desde este evento
+    </a>
+
+    {% if event.incidents.count() %}
+    <div class="panel-desc" style="margin-top:18px;">Incidentes vinculados</div>
+    {% for inc in event.incidents %}
+    <a href="{{ url_for('incidents.detail', incident_id=inc.id) }}" class="detail-row" style="text-decoration:none;">
+      <span class="k">#{{ inc.id }} · {{ inc.title[:30] }}</span>
+      <span class="v"><span class="badge st-{{ inc.status }}">{{ inc.status_label }}</span></span>
+    </a>
+    {% endfor %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

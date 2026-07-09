@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Panel · SOC-PYME Solutions{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="app">
+  <div class="app-shell">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <a class="sidebar-brand logo" href="{{ url_for('dashboard.index') }}">
+        <div class="logo-icon"></div>
+        <span class="logo-name">SOC-<span>PYME</span></span>
+      </a>
+      <nav class="sidebar-nav">
+        <div class="sidebar-section">Operación</div>
+        <a href="{{ url_for('dashboard.index') }}" class="{% if active_page == 'dashboard' %}active{% endif %}">
+          <span class="ic">📊</span> Dashboard
+        </a>
+        <a href="{{ url_for('events.list_events') }}" class="{% if active_page == 'events' %}active{% endif %}">
+          <span class="ic">🔔</span> Eventos
+        </a>
+        <a href="{{ url_for('incidents.list_incidents') }}" class="{% if active_page == 'incidents' %}active{% endif %}">
+          <span class="ic">🎫</span> Incidentes
+        </a>
+        <a href="{{ url_for('alerts.list_rules') }}" class="{% if active_page == 'alerts' %}active{% endif %}">
+          <span class="ic">🚨</span> Alertas
+        </a>
+        <div class="sidebar-section">Recursos</div>
+        <a href="{{ url_for('main.index') }}"><span class="ic">🌐</span> Ver landing</a>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="sidebar-user">
+          <div class="sidebar-avatar">{{ current_user.initials }}</div>
+          <div class="sidebar-user-info">
+            <strong>{{ current_user.name }}</strong>
+            <span>{{ current_user.company }}</span>
+          </div>
+        </div>
+        <a href="{{ url_for('auth.logout') }}" class="sidebar-logout">Cerrar sesión</a>
+      </div>
+    </aside>
+    <div class="overlay" id="overlay"></div>
+
+    <!-- MAIN -->
+    <div class="app-main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Menú">☰</button>
+          <div>
+            <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+            <div class="topbar-sub">{% block page_sub %}SOC-PYME · Panel de operaciones{% endblock %}</div>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <span class="live-dot">En vivo</span>
+          <div class="bell-wrap">
+            <button class="bell-btn" id="bell-btn" aria-label="Notificaciones">
+              🔔
+              <span class="bell-count {% if not unread_notifications %}hidden{% endif %}" id="bell-count">{{ unread_notifications }}</span>
+            </button>
+            <div class="bell-dropdown" id="bell-dropdown">
+              <div class="bell-head">
+                <strong>Notificaciones</strong>
+                <a id="mark-all-read">Marcar todas leídas</a>
+              </div>
+              <div id="bell-list">
+                {% for n in recent_notifications %}
+                <div class="bell-item">
+                  <span class="bi-ic">{{ '⚠️' if n.kind == 'alerta' else 'ℹ️' }}</span>
+                  <div>{{ n.message }}<time>{{ n.created_at.strftime('%d/%m %H:%M') }}</time></div>
+                </div>
+                {% else %}
+                <div class="bell-empty">No hay notificaciones nuevas.</div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-stack" data-flash-stack>
+          {% for category, message in messages %}
+          <div class="flash {{ category }}">
+            <span>{{ message }}</span>
+            <button class="flash-close" aria-label="Cerrar">&times;</button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      {% endwith %}
+
+      <main class="content">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <!-- Token CSRF disponible para peticiones fetch (JS) -->
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

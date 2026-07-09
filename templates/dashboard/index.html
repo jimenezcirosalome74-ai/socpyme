@@ -1,0 +1,84 @@
+{% extends "base_app.html" %}
+{% set active_page = 'dashboard' %}
+{% block title %}Dashboard · SOC-PYME{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_sub %}Monitoreo en tiempo real · actualiza cada 10s{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div id="dashboard-root">
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Eventos hoy</div>
+      <div class="kpi-val" id="kpi-events">{{ stats.kpis.events_today }}</div>
+      <div class="kpi-foot">Detectados en las últimas 24 h</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Críticos</div>
+      <div class="kpi-val danger" id="kpi-critical">{{ stats.kpis.critical_today }}</div>
+      <div class="kpi-foot">Requieren atención inmediata</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Resueltos</div>
+      <div class="kpi-val ok" id="kpi-resolved">{{ stats.kpis.resolved_today }}</div>
+      <div class="kpi-foot">Eventos cerrados hoy</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">% Resolución</div>
+      <div class="kpi-val" id="kpi-rate">{{ stats.kpis.resolution_rate }}%</div>
+      <div class="kpi-foot"><span id="kpi-open-incidents">{{ stats.kpis.open_incidents }}</span> incidentes abiertos</div>
+    </div>
+  </div>
+
+  <!-- Gráficos -->
+  <div class="panel-grid">
+    <div class="panel">
+      <div class="panel-title">Actividad · 7 días</div>
+      <div class="panel-desc">Eventos de seguridad detectados por día</div>
+      <div class="chart-holder"><canvas id="chart7d"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Distribución por severidad</div>
+      <div class="panel-desc">Proporción de eventos según su criticidad</div>
+      <div class="chart-holder donut"><canvas id="chartSeverity"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Últimos eventos -->
+  <div class="panel">
+    <div class="page-head" style="margin-bottom:14px;">
+      <div>
+        <div class="panel-title">Últimos eventos</div>
+        <div class="panel-desc">Los 10 eventos más recientes del sistema</div>
+      </div>
+      <a href="{{ url_for('events.list_events') }}" class="btn btn-ghost btn-sm">Ver todos →</a>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Severidad</th>
+          <th>Tipo</th>
+          <th class="hide-sm">IP origen</th>
+          <th>Hora</th>
+        </tr>
+      </thead>
+      <tbody id="recent-events-body">
+        {% for e in recent_events %}
+        <tr class="clickable" onclick="location.href='{{ url_for('events.detail', event_id=e.id) }}'">
+          <td><span class="badge sev-{{ e.severity }}">{{ e.severity_label }}</span></td>
+          <td>{{ e.event_type }}</td>
+          <td class="mono hide-sm">{{ e.source_ip or '—' }}</td>
+          <td class="mono">{{ e.timestamp.strftime('%H:%M') }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="bell-empty">Sin eventos aún. Ejecutá <code>flask simulate</code>.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

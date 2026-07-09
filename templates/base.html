@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}SOC-PYME Solutions · Ciberseguridad para PYMES{% endblock %}</title>
+  <meta name="description" content="Plataforma de ciberseguridad (mini-SOC) para PYMES de Latinoamérica.">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+  {% block nav %}
+  <nav>
+    <a class="logo" href="{{ url_for('main.index') }}">
+      <div class="logo-icon"></div>
+      <span class="logo-name">SOC-<span>PYME</span></span>
+    </a>
+    <button class="nav-toggle" aria-label="Menú" data-nav-toggle>☰</button>
+    <ul id="nav-menu">
+      <li><a href="{{ url_for('main.index') }}#plataforma">Plataforma</a></li>
+      <li><a href="{{ url_for('main.index') }}#servicios">Servicios</a></li>
+      <li><a href="{{ url_for('main.index') }}#planes">Planes</a></li>
+      <li><a href="{{ url_for('main.index') }}#empresa">Empresa</a></li>
+      {% if current_user.is_authenticated %}
+        <li><a href="{{ url_for('dashboard.index') }}" class="nav-btn">Ir al panel →</a></li>
+      {% else %}
+        <li><a href="{{ url_for('auth.login') }}">Ingresar</a></li>
+        <li><a href="{{ url_for('auth.register') }}" class="nav-btn">Comenzar gratis →</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endblock %}
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-stack" data-flash-stack>
+      {% for category, message in messages %}
+      <div class="flash {{ category }}">
+        <span>{{ message }}</span>
+        <button class="flash-close" aria-label="Cerrar">&times;</button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

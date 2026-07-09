@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Error del servidor · SOC-PYME{% endblock %}
+{% block nav %}{% endblock %}
+{% block content %}
+<div class="error-page">
+  <div class="error-code">5<span>0</span>0</div>
+  <h1>Algo salió mal</h1>
+  <p>Ocurrió un error inesperado en el servidor. Nuestro equipo fue notificado. Probá de nuevo en unos instantes.</p>
+  <div class="hero-ctas" style="justify-content:center;">
+    <a class="btn-fill" href="{{ url_for('main.index') }}">← Volver al inicio</a>
+  </div>
+</div>
+{% endblock %}

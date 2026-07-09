@@ -1,0 +1,47 @@
+{% extends "base_app.html" %}
+{% set active_page = 'incidents' %}
+{% block title %}Nuevo incidente · SOC-PYME{% endblock %}
+{% block page_title %}Nuevo incidente{% endblock %}
+{% block page_sub %}Crear un ticket de incidente{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h2>Crear incidente</h2>
+    <p>{% if event %}Generado desde el evento #{{ event.id }} · {{ event.event_type }}.{% else %}Completá los datos del nuevo ticket.{% endif %}</p>
+  </div>
+  <a href="{{ url_for('incidents.list_incidents') }}" class="btn btn-ghost btn-sm">← Volver</a>
+</div>
+
+<div class="form-card">
+  <form method="post" action="{{ url_for('incidents.new') }}" data-validate="incident" novalidate>
+    {{ form.csrf_token }}
+    {{ form.event_id() }}
+
+    <div class="field {% if form.title.errors %}has-error{% endif %}">
+      <label for="title">Título</label>
+      <input type="text" id="title" name="title" value="{{ form.title.data or '' }}" placeholder="Resumen del incidente" required>
+      {% for e in form.title.errors %}<span class="err">{{ e }}</span>{% endfor %}
+    </div>
+
+    <div class="field {% if form.description.errors %}has-error{% endif %}">
+      <label for="description">Descripción</label>
+      <textarea id="description" name="description" rows="5" placeholder="Detalle del incidente…">{{ form.description.data or '' }}</textarea>
+      {% for e in form.description.errors %}<span class="err">{{ e }}</span>{% endfor %}
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+      <div class="field">
+        <label for="severity">Severidad</label>
+        {{ form.severity() }}
+      </div>
+      <div class="field">
+        <label for="assignee_id">Asignar a</label>
+        {{ form.assignee_id() }}
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="margin-top:8px;">Crear incidente</button>
+  </form>
+</div>
+{% endblock %}

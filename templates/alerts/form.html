@@ -1,0 +1,61 @@
+{% extends "base_app.html" %}
+{% set active_page = 'alerts' %}
+{% block title %}{{ 'Editar' if mode == 'edit' else 'Nueva' }} regla · SOC-PYME{% endblock %}
+{% block page_title %}{{ 'Editar regla' if mode == 'edit' else 'Nueva regla de alerta' }}{% endblock %}
+{% block page_sub %}Configuración de umbrales (RF-05){% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h2>{{ 'Editar regla de alerta' if mode == 'edit' else 'Crear regla de alerta' }}</h2>
+    <p>Se disparará una notificación cuando se detecten N eventos de la severidad elegida dentro de la ventana de X minutos.</p>
+  </div>
+  <a href="{{ url_for('alerts.list_rules') }}" class="btn btn-ghost btn-sm">← Volver</a>
+</div>
+
+<div class="form-card">
+  <form method="post" novalidate>
+    {{ form.csrf_token }}
+
+    <div class="field {% if form.name.errors %}has-error{% endif %}">
+      <label for="name">Nombre de la regla</label>
+      <input type="text" id="name" name="name" value="{{ form.name.data or '' }}" placeholder="Ej: Pico de eventos críticos" required>
+      {% for e in form.name.errors %}<span class="err">{{ e }}</span>{% endfor %}
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+      <div class="field {% if form.target_severity.errors %}has-error{% endif %}">
+        <label for="target_severity">Severidad a vigilar</label>
+        {{ form.target_severity() }}
+        {% for e in form.target_severity.errors %}<span class="err">{{ e }}</span>{% endfor %}
+      </div>
+      <div class="field {% if form.channel.errors %}has-error{% endif %}">
+        <label for="channel">Canal de notificación</label>
+        {{ form.channel() }}
+        {% for e in form.channel.errors %}<span class="err">{{ e }}</span>{% endfor %}
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+      <div class="field {% if form.threshold.errors %}has-error{% endif %}">
+        <label for="threshold">Umbral (N.º de eventos)</label>
+        <input type="number" id="threshold" name="threshold" min="1" step="1"
+               value="{{ form.threshold.data if form.threshold.data is not none else '' }}" required>
+        {% for e in form.threshold.errors %}<span class="err">{{ e }}</span>{% endfor %}
+      </div>
+      <div class="field {% if form.window_minutes.errors %}has-error{% endif %}">
+        <label for="window_minutes">Ventana (minutos)</label>
+        <input type="number" id="window_minutes" name="window_minutes" min="1" step="1"
+               value="{{ form.window_minutes.data if form.window_minutes.data is not none else '' }}" required>
+        {% for e in form.window_minutes.errors %}<span class="err">{{ e }}</span>{% endfor %}
+      </div>
+    </div>
+
+    <label class="field-check">
+      {{ form.active() }} Regla activa
+    </label>
+
+    <button type="submit" class="btn btn-primary">{{ 'Guardar cambios' if mode == 'edit' else 'Crear regla' }}</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Crear cuenta · SOC-PYME Solutions{% endblock %}
+{% block nav %}{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <aside class="auth-aside">
+    <a class="logo" href="{{ url_for('main.index') }}">
+      <div class="logo-icon"></div>
+      <span class="logo-name">SOC-<span>PYME</span></span>
+    </a>
+    <div>
+      <h2>Empezá a proteger tu empresa en minutos.</h2>
+      <p>Sin tarjeta de crédito. 14 días de prueba completa con todas las funciones.</p>
+      <ul class="auth-points">
+        <li>Configuración en minutos</li>
+        <li>Datos cifrados de extremo a extremo</li>
+        <li>Soporte en español</li>
+      </ul>
+    </div>
+    <p style="font-size:13px;">© 2026 SOC-PYME Solutions · Medellín, Colombia</p>
+  </aside>
+
+  <main class="auth-main">
+    <div class="auth-card">
+      <h1>Creá tu cuenta gratis</h1>
+      <p class="lead">Completá tus datos y accedé al panel al instante.</p>
+
+      <form method="post" action="{{ url_for('auth.register') }}" data-validate="register" novalidate>
+        {{ form.csrf_token }}
+        <div class="field {% if form.name.errors %}has-error{% endif %}">
+          <label for="name">Nombre completo</label>
+          <input type="text" id="name" name="name" value="{{ form.name.data or '' }}" placeholder="Camila Restrepo" required>
+          {% for e in form.name.errors %}<span class="err">{{ e }}</span>{% endfor %}
+        </div>
+        <div class="field {% if form.company.errors %}has-error{% endif %}">
+          <label for="company">Empresa</label>
+          <input type="text" id="company" name="company" value="{{ form.company.data or '' }}" placeholder="Mi PYME SAS" required>
+          {% for e in form.company.errors %}<span class="err">{{ e }}</span>{% endfor %}
+        </div>
+        <div class="field {% if form.email.errors %}has-error{% endif %}">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" value="{{ form.email.data or '' }}" placeholder="tu@empresa.com" required>
+          {% for e in form.email.errors %}<span class="err">{{ e }}</span>{% endfor %}
+        </div>
+        <div class="field {% if form.password.errors %}has-error{% endif %}">
+          <label for="password">Contraseña</label>
+          <input type="password" id="password" name="password" placeholder="Mínimo 8 caracteres" required>
+          {% for e in form.password.errors %}<span class="err">{{ e }}</span>{% endfor %}
+        </div>
+        <div class="field {% if form.confirm.errors %}has-error{% endif %}">
+          <label for="confirm">Confirmar contraseña</label>
+          <input type="password" id="confirm" name="confirm" placeholder="Repetí la contraseña" required>
+          {% for e in form.confirm.errors %}<span class="err">{{ e }}</span>{% endfor %}
+        </div>
+        <button type="submit" class="btn-fill btn-block">Crear cuenta →</button>
+      </form>
+
+      <p class="auth-alt">¿Ya tenés cuenta? <a href="{{ url_for('auth.login') }}">Ingresá acá</a></p>
+    </div>
+  </main>
+</div>
+{% endblock %}

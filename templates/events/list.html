@@ -1,0 +1,106 @@
+{% extends "base_app.html" %}
+{% set active_page = 'events' %}
+{% block title %}Eventos · SOC-PYME{% endblock %}
+{% block page_title %}Eventos de seguridad{% endblock %}
+{% block page_sub %}{{ pagination.total }} eventos registrados{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h2>Eventos de seguridad</h2>
+    <p>Filtrá, buscá y revisá los eventos detectados por la plataforma.</p>
+  </div>
+</div>
+
+<!-- FILTROS -->
+<form method="get" action="{{ url_for('events.list_events') }}" class="filter-bar">
+  <div class="field">
+    <label>Buscar</label>
+    <input type="text" name="q" value="{{ filters.q }}" placeholder="Tipo, descripción o IP…">
+  </div>
+  <div class="field">
+    <label>Severidad</label>
+    <select name="severity">
+      <option value="">Todas</option>
+      {% for s in severities %}
+      <option value="{{ s }}" {% if filters.severity == s %}selected{% endif %}>{{ s|capitalize }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label>Estado</label>
+    <select name="status">
+      <option value="">Todos</option>
+      {% for st in statuses %}
+      <option value="{{ st }}" {% if filters.status == st %}selected{% endif %}>{{ st|capitalize }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label>Desde</label>
+    <input type="date" name="from" value="{{ filters.from }}">
+  </div>
+  <div class="field">
+    <label>Hasta</label>
+    <input type="date" name="to" value="{{ filters.to }}">
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+    <a href="{{ url_for('events.list_events') }}" class="btn btn-ghost btn-sm">Limpiar</a>
+  </div>
+</form>
+
+<!-- TABLA -->
+<div class="panel" style="padding:0;">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Severidad</th>
+        <th>Tipo</th>
+        <th class="hide-sm">Descripción</th>
+        <th class="hide-sm">IP origen</th>
+        <th>Estado</th>
+        <th>Fecha/Hora</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in events %}
+      <tr class="clickable" onclick="location.href='{{ url_for('events.detail', event_id=e.id) }}'">
+        <td><span class="badge sev-{{ e.severity }}">{{ e.severity_label }}</span></td>
+        <td>{{ e.event_type }}</td>
+        <td class="hide-sm">{{ e.description[:60] }}{% if e.description|length > 60 %}…{% endif %}</td>
+        <td class="mono hide-sm">{{ e.source_ip or '—' }}</td>
+        <td><span class="badge st-{{ e.status }}">{{ e.status_label }}</span></td>
+        <td class="mono">{{ e.timestamp.strftime('%d/%m %H:%M') }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="empty-state"><div class="ic">🔍</div>No se encontraron eventos con esos filtros.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- PAGINACIÓN -->
+{% if pagination.pages > 1 %}
+<div class="pagination">
+  {% set base_args = filters %}
+  {% if pagination.has_prev %}
+    <a href="{{ url_for('events.list_events', page=pagination.prev_num, **filters) }}">← Anterior</a>
+  {% else %}<span class="disabled">← Anterior</span>{% endif %}
+
+  {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+    {% if p %}
+      {% if p == pagination.page %}
+        <span class="current">{{ p }}</span>
+      {% else %}
+        <a href="{{ url_for('events.list_events', page=p, **filters) }}">{{ p }}</a>
+      {% endif %}
+    {% else %}<span class="disabled">…</span>{% endif %}
+  {% endfor %}
+
+  {% if pagination.has_next %}
+    <a href="{{ url_for('events.list_events', page=pagination.next_num, **filters) }}">Siguiente →</a>
+  {% else %}<span class="disabled">Siguiente →</span>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

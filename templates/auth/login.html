@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Ingresar · SOC-PYME Solutions{% endblock %}
+{% block nav %}{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <aside class="auth-aside">
+    <a class="logo" href="{{ url_for('main.index') }}">
+      <div class="logo-icon"></div>
+      <span class="logo-name">SOC-<span>PYME</span></span>
+    </a>
+    <div>
+      <h2>Tu centro de operaciones de seguridad, siempre a mano.</h2>
+      <p>Monitoreá eventos, respondé incidentes y mantené tu PYME protegida las 24 horas.</p>
+      <ul class="auth-points">
+        <li>Dashboard en tiempo real</li>
+        <li>Alertas tempranas configurables</li>
+        <li>Gestión completa de incidentes</li>
+      </ul>
+    </div>
+    <p style="font-size:13px;">© 2026 SOC-PYME Solutions · Medellín, Colombia</p>
+  </aside>
+
+  <main class="auth-main">
+    <div class="auth-card">
+      <h1>Ingresá a tu panel</h1>
+      <p class="lead">Bienvenido de vuelta. Iniciá sesión para continuar.</p>
+
+      {% if show_demo %}
+      <div class="demo-box">
+        <strong>🔑 Credenciales de demostración</strong>
+        Email: <code>demo@socpyme.co</code><br>
+        Contraseña: <code>Demo1234!</code>
+      </div>
+      {% endif %}
+
+      <form method="post" action="{{ url_for('auth.login') }}" data-validate="login" novalidate>
+        {{ form.csrf_token }}
+        <div class="field {% if form.email.errors %}has-error{% endif %}">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email"
+                 placeholder="tu@empresa.com" required
+                 value="{{ 'demo@socpyme.co' if show_demo and not form.email.data else (form.email.data or '') }}">
+          {% for e in form.email.errors %}<span class="err">{{ e }}</span>{% endfor %}
+        </div>
+        <div class="field {% if form.password.errors %}has-error{% endif %}">
+          <label for="password">Contraseña</label>
+          <input type="password" id="password" name="password" placeholder="••••••••" required>
+          {% for e in form.password.errors %}<span class="err">{{ e }}</span>{% endfor %}
+        </div>
+        <label class="checkbox-row">
+          {{ form.remember() }} Recordarme en este equipo
+        </label>
+        <button type="submit" class="btn-fill btn-block">Ingresar →</button>
+      </form>
+
+      <p class="auth-alt">¿No tenés cuenta? <a href="{{ url_for('auth.register') }}">Creá una gratis</a></p>
+    </div>
+  </main>
+</div>
+{% endblock %}

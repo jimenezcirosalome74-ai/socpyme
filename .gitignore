@@ -1,0 +1,21 @@
+# Entorno virtual
+venv/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Base de datos SQLite (se regenera con seed.py)
+*.db
+socpyme.db
+
+# Flask
+instance/
+.flaskenv
+
+# Sistema / editor
+.DS_Store
+.vscode/
+.idea/

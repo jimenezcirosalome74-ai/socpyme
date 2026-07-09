@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Página no encontrada · SOC-PYME{% endblock %}
+{% block nav %}{% endblock %}
+{% block content %}
+<div class="error-page">
+  <div class="error-code">4<span>0</span>4</div>
+  <h1>Esta página no existe</h1>
+  <p>La ruta que buscás no se encuentra o fue movida. Verificá la dirección o volvé al inicio.</p>
+  <div class="hero-ctas" style="justify-content:center;">
+    <a class="btn-fill" href="{{ url_for('main.index') }}">← Volver al inicio</a>
+    {% if current_user.is_authenticated %}
+    <a class="btn-outline" href="{{ url_for('dashboard.index') }}">Ir al panel</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
