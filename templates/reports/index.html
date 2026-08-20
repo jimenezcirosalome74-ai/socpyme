@@ -1,0 +1,70 @@
+{% extends "base_app.html" %}
+{% set active_page = 'reports' %}
+{% block title %}Reportes · SOC-PYME{% endblock %}
+{% block page_title %}Reportes{% endblock %}
+{% block page_sub %}Reporte de seguridad en PDF{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h2>Reportes de seguridad</h2>
+    <p>Generá un PDF con el resumen de {{ data.company }} para el período elegido.</p>
+  </div>
+  <a href="{{ url_for('reports.download', days=days) }}" class="btn btn-primary">⬇ Descargar PDF</a>
+</div>
+
+<!-- Selector de período -->
+<div class="filter-bar">
+  <div class="field">
+    <label>Período</label>
+    <div style="display:flex; gap:8px;">
+      {% for p in periods %}
+      <a href="{{ url_for('reports.index', days=p) }}"
+         class="btn btn-sm {{ 'btn-primary' if p == days else 'btn-ghost' }}">Últimos {{ p }} días</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Vista previa de lo que incluye el reporte -->
+<div class="detail-grid">
+  <div>
+    <div class="panel">
+      <div class="panel-title">Vista previa · Resumen del período</div>
+      <div class="panel-desc">Últimos {{ days }} días</div>
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="kpi-card"><div class="kpi-label">Eventos</div><div class="kpi-val">{{ data.kpis.total }}</div></div>
+        <div class="kpi-card"><div class="kpi-label">Críticos</div><div class="kpi-val danger">{{ data.kpis.critical }}</div></div>
+        <div class="kpi-card"><div class="kpi-label">Resueltos</div><div class="kpi-val ok">{{ data.kpis.resolved }}</div></div>
+        <div class="kpi-card"><div class="kpi-label">% Resolución</div><div class="kpi-val">{{ data.kpis.rate }}%</div></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:18px;">
+      <div class="panel-title">Eventos más frecuentes</div>
+      <table class="data-table">
+        <thead><tr><th>Tipo</th><th style="text-align:right;">Cantidad</th></tr></thead>
+        <tbody>
+          {% for t in data.top_types %}
+          <tr><td>{{ t[0] }}</td><td class="mono" style="text-align:right;">{{ t[1] }}</td></tr>
+          {% else %}
+          <tr><td colspan="2" class="bell-empty">Sin eventos en el período.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">El PDF incluye</div>
+    <ul class="timeline" style="margin-top:10px;">
+      <li><div class="tl-detail">Resumen de KPIs del período</div></li>
+      <li><div class="tl-detail">Distribución por severidad</div></li>
+      <li><div class="tl-detail">Eventos más frecuentes</div></li>
+      <li><div class="tl-detail">Incidentes del período</div></li>
+      <li><div class="tl-detail">Reglas de alerta activas</div></li>
+    </ul>
+    <a href="{{ url_for('reports.download', days=days) }}" class="btn btn-cyan-sm" style="width:100%; justify-content:center; margin-top:10px;">⬇ Descargar reporte PDF</a>
+  </div>
+</div>
+{% endblock %}

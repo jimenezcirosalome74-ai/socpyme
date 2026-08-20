@@ -40,6 +40,7 @@ def create_app(config_name=None):
     from routes.alerts import alerts_bp
     from routes.apikeys import apikeys_bp
     from routes.account import account_bp
+    from routes.reports import reports_bp
     from routes.api import api_bp
 
     app.register_blueprint(main_bp)
@@ -50,6 +51,7 @@ def create_app(config_name=None):
     app.register_blueprint(alerts_bp)
     app.register_blueprint(apikeys_bp)
     app.register_blueprint(account_bp)
+    app.register_blueprint(reports_bp)
     app.register_blueprint(api_bp)
 
     # La API JSON se exime de CSRF (usa sesión/inyección externa, no formularios)

@@ -407,7 +407,20 @@ def main():
                     "password": "Reseteada123"}, follow_redirects=False)
         results.append(check("Login tras restablecer contraseña", r.status_code == 302))
 
-    print("\n=== 13. Rate limiting de login (B) ===")
+    print("\n=== 13. Reportes PDF ===")
+    r = client.get("/reportes/")
+    results.append(check("Página de reportes carga", r.status_code == 200 and "Descargar" in r.get_data(as_text=True)))
+    r = client.get("/reportes/pdf?days=30")
+    body = r.get_data()
+    ok_pdf = (r.status_code == 200
+              and r.headers.get("Content-Type") == "application/pdf"
+              and body[:5] == b"%PDF-"
+              and "attachment" in r.headers.get("Content-Disposition", ""))
+    results.append(check("Descarga PDF válida (30 días)", ok_pdf, f"({len(body)} bytes)"))
+    r = client.get("/reportes/pdf?days=7")
+    results.append(check("Descarga PDF (7 días)", r.status_code == 200 and r.get_data()[:5] == b"%PDF-"))
+
+    print("\n=== 14. Rate limiting de login (B) ===")
     rl = app.test_client()
     saw_429 = False
     for _ in range(30):
@@ -418,11 +431,11 @@ def main():
             break
     results.append(check("Login se bloquea tras muchos intentos (429)", saw_429))
 
-    print("\n=== 14. Errores ===")
+    print("\n=== 15. Errores ===")
     r = client.get("/ruta-inexistente")
     results.append(check("404 personalizado", r.status_code == 404 and "no existe" in r.get_data(as_text=True)))
 
-    print("\n=== 15. Logout ===")
+    print("\n=== 16. Logout ===")
     r = client.get("/logout", follow_redirects=False)
     results.append(check("Logout redirige", r.status_code == 302))
     r = client.get("/panel")

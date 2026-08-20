@@ -29,6 +29,10 @@ clean" (Inter + DM Mono, paleta navy/cyan/blue) con gráficos **Chart.js**.
   **email** (SMTP; sin configurar, modo demo que registra el envío) y **SMS**
   (requiere proveedor). Cada intento se registra en `AlertDelivery` y se ve en el
   panel **"Entregas recientes"**.
+- **Reportes PDF** (`/reportes`): descargá un PDF de seguridad por empresa
+  (KPIs, distribución por severidad, eventos más frecuentes, incidentes y reglas)
+  para los últimos 7, 30 o 90 días. Generado con fpdf2, respeta el aislamiento
+  por empresa.
 - **Multi-tenancy + roles**: cada empresa (tenant) ve **solo sus** eventos,
   incidentes, alertas y notificaciones. Roles: `cliente`/`admin` (acotados a su
   empresa) y `analista` del SOC (ve **todas** las empresas). El registro crea una
@@ -167,6 +171,7 @@ soc-pyme/
 ├── extensions.py        # db, login_manager, csrf
 ├── models.py            # Company, User(rol), Event, Incident, IncidentLog, AlertRule, AlertDelivery, AuditLog, Notification, ApiKey
 ├── delivery.py          # Entrega de alertas por canal (in-app, email SMTP, webhook, SMS)
+├── reports.py           # Generación de reportes PDF por empresa (fpdf2)
 ├── forms.py             # Formularios WTForms (validación + CSRF)
 ├── services.py          # Lógica: evaluación de alertas, KPIs, bitácora
 ├── seed.py              # Datos demo realistas
@@ -185,6 +190,7 @@ soc-pyme/
 │   ├── alerts.py        # Reglas de alerta: CRUD + toggle + bitácora (RF-05)
 │   ├── apikeys.py       # Claves API por empresa (multi-tenancy)
 │   ├── account.py       # Cuenta: perfil, contraseña, empresa y usuarios
+│   ├── reports.py       # Reportes PDF por empresa
 │   └── api.py           # API REST JSON
 ├── templates/
 │   ├── base.html            # Layout público
@@ -197,6 +203,7 @@ soc-pyme/
 │   ├── alerts/              # list.html, form.html
 │   ├── apikeys/             # index.html
 │   ├── account/             # index.html, users.html
+│   ├── reports/             # index.html
 │   └── errors/              # 403.html, 404.html, 429.html, 500.html
 └── static/
     ├── css/  (main.css, dashboard.css)
@@ -282,7 +289,7 @@ El repo incluye dos scripts de prueba (opcionales, requieren la app corriendo
 solo para `browser_check.py`):
 
 ```bash
-python verify_e2e.py       # 57 checks end-to-end (multi-tenancy, API keys, cuenta, alertas, rate limiting)
+python verify_e2e.py       # 60 checks end-to-end (multi-tenancy, API keys, cuenta, alertas, PDF, rate limiting)
 python browser_check.py    # verificación en navegador (requiere: pip install playwright)
 ```
 
