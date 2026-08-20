@@ -26,6 +26,16 @@ class Config:
     ALERT_DEFAULT_THRESHOLD = 3       # nº de eventos críticos para disparar alerta
     EVENTS_PER_PAGE = 15              # paginación de la lista de eventos
 
+    # Entrega de alertas
+    ALERT_WEBHOOK_TIMEOUT = int(os.environ.get("ALERT_WEBHOOK_TIMEOUT", 4))
+    # Email (SMTP). Sin SMTP_HOST, los correos se registran en modo demo.
+    SMTP_HOST = os.environ.get("SMTP_HOST")           # ej: smtp.gmail.com
+    SMTP_PORT = int(os.environ.get("SMTP_PORT", 587))
+    SMTP_USER = os.environ.get("SMTP_USER")
+    SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
+    SMTP_USE_TLS = os.environ.get("SMTP_USE_TLS", "1") == "1"
+    MAIL_FROM = os.environ.get("MAIL_FROM", "alertas@socpyme.co")
+
 
 class DevelopmentConfig(Config):
     DEBUG = True

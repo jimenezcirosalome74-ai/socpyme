@@ -33,7 +33,7 @@
           <td><strong>{{ r.name }}</strong></td>
           <td><span class="badge sev-{{ r.target_severity }}">{{ r.severity_label }}</span></td>
           <td class="mono">≥ {{ r.threshold }} / {{ r.window_minutes }} min</td>
-          <td class="hide-sm">{{ r.channel_label }}</td>
+          <td class="hide-sm">{{ r.channel_label }}{% if r.destination %}<br><span class="tl-meta">{{ r.destination[:32] }}</span>{% endif %}</td>
           <td>
             <span class="chip {{ 'on' if r.active else 'off' }}">{{ 'Activa' if r.active else 'Inactiva' }}</span>
           </td>
@@ -63,21 +63,45 @@
     </table>
   </div>
 
-  <!-- Bitácora de cambios -->
-  <div class="panel">
-    <div class="panel-title">Bitácora de cambios</div>
-    <div class="panel-desc">Últimas modificaciones a las reglas</div>
-    <ul class="timeline">
-      {% for log in logs %}
-      <li>
-        <div class="tl-action">{{ log.action }}</div>
-        <div class="tl-detail">{{ log.detail }}</div>
-        <div class="tl-meta">{{ log.user.name if log.user else 'Sistema' }} · {{ log.timestamp.strftime('%d/%m/%Y %H:%M') }}</div>
-      </li>
-      {% else %}
-      <li><div class="tl-detail">Sin cambios registrados.</div></li>
-      {% endfor %}
-    </ul>
+  <div>
+    <!-- Entregas recientes -->
+    <div class="panel">
+      <div class="panel-title">Entregas recientes</div>
+      <div class="panel-desc">Últimos envíos de alertas por sus canales</div>
+      <table class="data-table">
+        <tbody>
+          {% for d in deliveries %}
+          <tr>
+            <td>{{ d.channel_label }}{% if d.destination %}<br><span class="tl-meta">{{ d.destination[:26] }}</span>{% endif %}</td>
+            <td>
+              {% set st = 'st-resuelto' if d.status.startswith('enviada') else ('st-escalado' if d.status == 'fallida' else 'st-en_progreso') %}
+              <span class="badge {{ st }}">{{ d.status }}</span>
+            </td>
+            <td class="mono hide-sm">{{ d.created_at.strftime('%d/%m %H:%M') }}</td>
+          </tr>
+          {% else %}
+          <tr><td class="bell-empty">Sin entregas todavía. Se registran cuando una regla se dispara.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Bitácora de cambios -->
+    <div class="panel" style="margin-top:18px;">
+      <div class="panel-title">Bitácora de cambios</div>
+      <div class="panel-desc">Últimas modificaciones a las reglas</div>
+      <ul class="timeline">
+        {% for log in logs %}
+        <li>
+          <div class="tl-action">{{ log.action }}</div>
+          <div class="tl-detail">{{ log.detail }}</div>
+          <div class="tl-meta">{{ log.user.name if log.user else 'Sistema' }} · {{ log.timestamp.strftime('%d/%m/%Y %H:%M') }}</div>
+        </li>
+        {% else %}
+        <li><div class="tl-detail">Sin cambios registrados.</div></li>
+        {% endfor %}
+      </ul>
+    </div>
   </div>
 </div>
 {% endblock %}

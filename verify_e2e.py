@@ -3,8 +3,11 @@
 Recorre el flujo completo: seed -> login -> dashboard -> filtrar eventos ->
 inyectar eventos por API (disparar alerta) -> crear incidente -> cerrarlo.
 """
+import json
 import re
 import sys
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -13,7 +16,27 @@ except (AttributeError, ValueError):
 
 from app import create_app
 from seed import seed_database
-from models import AlertRule, Notification, Company, ApiKey, Event, User
+from models import AlertRule, AlertDelivery, Notification, Company, ApiKey, Event, User
+
+
+# --- Servidor de prueba para recibir el webhook real -----------------------
+WEBHOOK_INBOX = []
+
+
+class _WebhookHandler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(length).decode("utf-8") if length else ""
+        try:
+            WEBHOOK_INBOX.append(json.loads(body))
+        except ValueError:
+            WEBHOOK_INBOX.append({"raw": body})
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b'{"ok":true}')
+
+    def log_message(self, *args):
+        pass  # silencio
 
 CSRF_RE = re.compile(r'name="csrf_token"[^>]*value="([^"]+)"')
 
@@ -250,7 +273,57 @@ def main():
     gone, _ = rule_by_name("Regla E2E Info")
     results.append(check("Eliminar regla", gone is None))
 
-    print("\n=== 11. Gestión de cuenta (C) ===")
+    print("\n=== 11. Entrega real de alertas (D) ===")
+
+    def deliveries(company_id=None, channel=None, status_prefix=None):
+        with app.app_context():
+            q = AlertDelivery.query
+            if company_id is not None:
+                q = q.filter(AlertDelivery.company_id == company_id)
+            if channel is not None:
+                q = q.filter(AlertDelivery.channel == channel)
+            rows = q.all()
+            if status_prefix is not None:
+                rows = [r for r in rows if r.status.startswith(status_prefix)]
+            return rows
+
+    # a) Email en modo dev: la regla sembrada (email) ya disparó en la sección 6
+    results.append(check("Entrega email registrada (modo dev)",
+                         len(deliveries(FERRE_ID, "email", "enviada")) >= 1))
+
+    # b) Webhook REAL: levantamos un servidor local y creamos una regla que lo apunte
+    server = ThreadingHTTPServer(("127.0.0.1", 5999), _WebhookHandler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        atok = csrf_from(client.get("/alertas/nueva").get_data(as_text=True))
+        client.post("/alertas/nueva", data={
+            "csrf_token": atok, "name": "Webhook E2E", "target_severity": "critico",
+            "threshold": "2", "window_minutes": "5", "channel": "webhook",
+            "destination": "http://127.0.0.1:5999/hook", "active": "y",
+        }, follow_redirects=True)
+        # Disparar: inyectar críticos de Ferretería
+        for i in range(3):
+            client.post("/api/events", headers={"X-API-Key": FERRE_KEY},
+                        json={"severity": "critico", "type": "Prueba webhook", "source_ip": "9.9.9.9"})
+        # Dar tiempo a que el POST llegue
+        import time as _t
+        _t.sleep(0.5)
+        results.append(check("Webhook real recibió el POST",
+                             any("Webhook E2E" in (m.get("rule") or "") for m in WEBHOOK_INBOX),
+                             f"(inbox={len(WEBHOOK_INBOX)})"))
+        results.append(check("Entrega webhook registrada 'enviada'",
+                             len(deliveries(FERRE_ID, "webhook", "enviada")) >= 1))
+    finally:
+        server.shutdown()
+
+    # c) SMS sin proveedor: se registra como 'omitida'
+    for i in range(2):
+        client.post("/api/events", headers={"X-API-Key": PAN_KEY},
+                    json={"severity": "critico", "type": "Prueba SMS", "source_ip": "8.8.8.8"})
+    results.append(check("Entrega SMS marcada 'omitida'",
+                         len(deliveries(PAN_ID, "sms", "omitida")) >= 1))
+
+    print("\n=== 12. Gestión de cuenta (C) ===")
 
     def user_by_email(email):
         with app.app_context():
@@ -334,11 +407,11 @@ def main():
                     "password": "Reseteada123"}, follow_redirects=False)
         results.append(check("Login tras restablecer contraseña", r.status_code == 302))
 
-    print("\n=== 12. Errores ===")
+    print("\n=== 13. Errores ===")
     r = client.get("/ruta-inexistente")
     results.append(check("404 personalizado", r.status_code == 404 and "no existe" in r.get_data(as_text=True)))
 
-    print("\n=== 13. Logout ===")
+    print("\n=== 14. Logout ===")
     r = client.get("/logout", follow_redirects=False)
     results.append(check("Logout redirige", r.status_code == 302))
     r = client.get("/panel")

@@ -83,6 +83,7 @@ def evaluate_alerts():
     Se llama tras insertar eventos (simulador o API).
     """
     created = []
+    triggered = []   # (rule, count, message) para entregar tras el commit
     now = utcnow()
     rules = AlertRule.query.filter_by(active=True).all()
 
@@ -104,20 +105,22 @@ def evaluate_alerts():
             continue
 
         rule.last_triggered_at = now
-        notif = Notification(
-            kind="alerta",
-            company_id=rule.company_id,
-            message=(
-                f"⚠ Regla «{rule.name}»: {count} eventos "
-                f"{rule.target_severity} en los últimos {rule.window_minutes} min "
-                f"(umbral {rule.threshold}) · canal: {rule.channel_label}."
-            ),
+        message = (
+            f"⚠ Regla «{rule.name}»: {count} eventos "
+            f"{rule.target_severity} en los últimos {rule.window_minutes} min "
+            f"(umbral {rule.threshold}) · canal: {rule.channel_label}."
         )
+        notif = Notification(kind="alerta", company_id=rule.company_id, message=message)
         db.session.add(notif)
         created.append(notif)
+        triggered.append((rule, count, message))
 
     if created:
         db.session.commit()
+        # Entrega real por el canal de cada regla (email/webhook/sms/in-app)
+        from delivery import deliver_alert
+        for rule, count, message in triggered:
+            deliver_alert(rule, message, count)
     return created
 
 

@@ -60,12 +60,14 @@ def seed_database(app, reset=True):
         db.session.add_all([
             AlertRule(name="Pico de eventos críticos", target_severity="critico",
                       threshold=3, window_minutes=5, channel="email",
+                      destination="seguridad@tornillo.co",
                       active=True, company_id=ferreteria.id),
             AlertRule(name="Avalancha de avisos", target_severity="aviso",
                       threshold=8, window_minutes=10, channel="in_app",
                       active=True, company_id=ferreteria.id),
             AlertRule(name="Críticos en horario nocturno", target_severity="critico",
                       threshold=2, window_minutes=15, channel="sms",
+                      destination="+57 300 123 4567",
                       active=True, company_id=panaderia.id),
         ])
         db.session.commit()

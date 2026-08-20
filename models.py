@@ -264,6 +264,7 @@ class AlertRule(db.Model):
     threshold = db.Column(db.Integer, nullable=False, default=3)     # nº de eventos
     window_minutes = db.Column(db.Integer, nullable=False, default=5)
     channel = db.Column(db.String(20), nullable=False, default="in_app")
+    destination = db.Column(db.String(300), nullable=False, default="")  # email / URL webhook / teléfono
     active = db.Column(db.Boolean, default=True, nullable=False)
     last_triggered_at = db.Column(db.DateTime, nullable=True)
     company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=True, index=True)
@@ -286,6 +287,7 @@ class AlertRule(db.Model):
             "threshold": self.threshold,
             "window_minutes": self.window_minutes,
             "channel": self.channel,
+            "destination": self.destination,
             "active": self.active,
             "last_triggered_at": self.last_triggered_at.isoformat()
             if self.last_triggered_at else None,
@@ -293,6 +295,34 @@ class AlertRule(db.Model):
 
     def __repr__(self):
         return f"<AlertRule {self.name}>"
+
+
+class AlertDelivery(db.Model):
+    """Registro de cada intento de entrega de una alerta (trazabilidad de RF-05)."""
+    __tablename__ = "alert_deliveries"
+
+    id = db.Column(db.Integer, primary_key=True)
+    rule_id = db.Column(db.Integer, nullable=True)  # puede sobrevivir a la regla
+    company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=True, index=True)
+    channel = db.Column(db.String(20), nullable=False)
+    destination = db.Column(db.String(300), nullable=False, default="")
+    status = db.Column(db.String(30), nullable=False)   # enviada / enviada (dev) / omitida / fallida
+    detail = db.Column(db.String(400), nullable=False, default="")
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False, index=True)
+
+    @property
+    def channel_label(self):
+        return ALERT_CHANNEL_LABELS.get(self.channel, self.channel)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "channel": self.channel,
+            "destination": self.destination,
+            "status": self.status,
+            "detail": self.detail,
+            "created_at": self.created_at.isoformat(),
+        }
 
 
 class AuditLog(db.Model):

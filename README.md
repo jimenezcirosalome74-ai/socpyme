@@ -22,9 +22,13 @@ clean" (Inter + DM Mono, paleta navy/cyan/blue) con gráficos **Chart.js**.
   cierre y **bitácora de cambios** (`IncidentLog`) para trazabilidad.
 - **Alertas** (RF-05): pantalla `/alertas` para **configurar reglas** (crear,
   editar, activar/desactivar con toggle y eliminar con confirmación), con umbral
-  N de eventos en ventana de X minutos y canal de notificación. Los cambios
-  quedan en una **bitácora de auditoría**. Al superarse un umbral se genera una
-  **notificación** en la campanita del topbar.
+  N de eventos en ventana de X minutos, canal y destino. Los cambios quedan en
+  una **bitácora de auditoría**.
+- **Entrega real de alertas**: al superarse un umbral, la alerta sale por su
+  canal — **in-app** (campanita), **webhook** (POST JSON a una URL, funcional),
+  **email** (SMTP; sin configurar, modo demo que registra el envío) y **SMS**
+  (requiere proveedor). Cada intento se registra en `AlertDelivery` y se ve en el
+  panel **"Entregas recientes"**.
 - **Multi-tenancy + roles**: cada empresa (tenant) ve **solo sus** eventos,
   incidentes, alertas y notificaciones. Roles: `cliente`/`admin` (acotados a su
   empresa) y `analista` del SOC (ve **todas** las empresas). El registro crea una
@@ -161,7 +165,8 @@ soc-pyme/
 ├── app.py               # App factory + CLI (simulate, seed) + error handlers
 ├── config.py            # SECRET_KEY, DB, cookies seguras, parámetros
 ├── extensions.py        # db, login_manager, csrf
-├── models.py            # Company, User(rol), Event, Incident, IncidentLog, AlertRule, AuditLog, Notification, ApiKey
+├── models.py            # Company, User(rol), Event, Incident, IncidentLog, AlertRule, AlertDelivery, AuditLog, Notification, ApiKey
+├── delivery.py          # Entrega de alertas por canal (in-app, email SMTP, webhook, SMS)
 ├── forms.py             # Formularios WTForms (validación + CSRF)
 ├── services.py          # Lógica: evaluación de alertas, KPIs, bitácora
 ├── seed.py              # Datos demo realistas
@@ -217,6 +222,19 @@ export SESSION_COOKIE_SECURE=1
 export FLASK_CONFIG=production
 ```
 
+**Envío real de emails de alerta** (opcional): definí las variables SMTP. Sin
+ellas, los correos se registran en modo demo (visibles en «Entregas recientes»),
+pero no se envían.
+```bash
+export SMTP_HOST=smtp.tu-proveedor.com
+export SMTP_PORT=587
+export SMTP_USER=usuario
+export SMTP_PASSWORD=secreto
+export MAIL_FROM="alertas@tu-dominio.com"
+```
+Los **webhooks** funcionan sin configuración: la regla hace un `POST` JSON a la
+URL que definas.
+
 ---
 
 ## 🧪 Verificación
@@ -225,7 +243,7 @@ El repo incluye dos scripts de prueba (opcionales, requieren la app corriendo
 solo para `browser_check.py`):
 
 ```bash
-python verify_e2e.py       # 52 checks end-to-end (multi-tenancy, API keys y gestión de cuenta)
+python verify_e2e.py       # 56 checks end-to-end (multi-tenancy, API keys, cuenta y entrega de alertas)
 python browser_check.py    # verificación en navegador (requiere: pip install playwright)
 ```
 

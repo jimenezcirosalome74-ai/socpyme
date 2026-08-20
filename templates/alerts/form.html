@@ -31,9 +31,17 @@
       </div>
       <div class="field {% if form.channel.errors %}has-error{% endif %}">
         <label for="channel">Canal de notificación</label>
-        {{ form.channel() }}
+        {{ form.channel(id="channel") }}
         {% for e in form.channel.errors %}<span class="err">{{ e }}</span>{% endfor %}
       </div>
+    </div>
+
+    <div class="field {% if form.destination.errors %}has-error{% endif %}">
+      <label for="destination">Destino <span id="dest-hint" style="color:var(--gray-400);font-weight:400;"></span></label>
+      <input type="text" id="destination" name="destination" value="{{ form.destination.data or (rule.destination if rule else '') }}"
+             placeholder="Depende del canal elegido">
+      {% for e in form.destination.errors %}<span class="err">{{ e }}</span>{% endfor %}
+      <span class="tl-meta" id="dest-help"></span>
     </div>
 
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
@@ -58,4 +66,29 @@
     <button type="submit" class="btn btn-primary">{{ 'Guardar cambios' if mode == 'edit' else 'Crear regla' }}</button>
   </form>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var channel = document.getElementById("channel");
+    var help = document.getElementById("dest-help");
+    var hint = document.getElementById("dest-hint");
+    var input = document.getElementById("destination");
+    var texts = {
+      in_app: ["(no aplica)", "La alerta aparece en la campanita del panel. No requiere destino."],
+      email:  ["· email", "Dejalo vacío para avisar a todos los administradores de tu empresa, o poné un email."],
+      webhook:["· URL", "Se hará un POST JSON a esta URL (ej: https://hooks.tu-servicio.com/soc)."],
+      sms:    ["· teléfono", "Número de teléfono. Requiere un proveedor SMS configurado."]
+    };
+    function update() {
+      var t = texts[channel.value] || ["", ""];
+      hint.textContent = t[0];
+      help.textContent = t[1];
+      input.disabled = (channel.value === "in_app");
+    }
+    channel.addEventListener("change", update);
+    update();
+  })();
+</script>
 {% endblock %}

@@ -5,7 +5,7 @@ from flask import (
 from flask_login import login_required, current_user
 
 from extensions import db
-from models import AlertRule, AuditLog
+from models import AlertRule, AuditLog, AlertDelivery
 from forms import AlertRuleForm
 from services import log_audit, scope_by_company, can_access
 
@@ -21,10 +21,13 @@ def list_rules():
         .all()
     )
     log_q = AuditLog.query.filter_by(entity_type="alert_rule")
+    del_q = AlertDelivery.query
     if not current_user.is_global:
         log_q = log_q.filter(AuditLog.company_id == current_user.company_id)
+        del_q = del_q.filter(AlertDelivery.company_id == current_user.company_id)
     logs = log_q.order_by(AuditLog.timestamp.desc()).limit(12).all()
-    return render_template("alerts/list.html", rules=rules, logs=logs)
+    deliveries = del_q.order_by(AlertDelivery.created_at.desc()).limit(10).all()
+    return render_template("alerts/list.html", rules=rules, logs=logs, deliveries=deliveries)
 
 
 @alerts_bp.route("/nueva", methods=["GET", "POST"])
@@ -38,6 +41,7 @@ def new():
             threshold=form.threshold.data,
             window_minutes=form.window_minutes.data,
             channel=form.channel.data,
+            destination=(form.destination.data or "").strip(),
             active=form.active.data,
             company_id=current_user.company_id,
         )
@@ -70,6 +74,7 @@ def edit(rule_id):
         rule.threshold = form.threshold.data
         rule.window_minutes = form.window_minutes.data
         rule.channel = form.channel.data
+        rule.destination = (form.destination.data or "").strip()
         rule.active = form.active.data
         log_audit(
             "alert_rule", rule.id, "editada",

@@ -108,6 +108,7 @@ class AlertRuleForm(FlaskForm):
         "Canal de notificación",
         choices=[("in_app", "En la app"), ("email", "Email"), ("webhook", "Webhook"), ("sms", "SMS")],
     )
+    destination = StringField("Destino", validators=[Optional(), Length(max=300)])
     active = BooleanField("Activa", default=True)
 
     def validate_target_severity(self, field):
@@ -117,6 +118,19 @@ class AlertRuleForm(FlaskForm):
     def validate_channel(self, field):
         if field.data not in ALERT_CHANNELS:
             raise ValidationError("Canal inválido.")
+
+    def validate_destination(self, field):
+        """El destino es obligatorio y con formato válido según el canal."""
+        value = (field.data or "").strip()
+        if self.channel.data == "webhook":
+            if not (value.startswith("http://") or value.startswith("https://")):
+                raise ValidationError("Para webhook, ingresá una URL http(s) válida.")
+        elif self.channel.data == "email" and value:
+            if "@" not in value or "." not in value:
+                raise ValidationError("Ingresá un email válido (o dejalo vacío para avisar a los admins).")
+        elif self.channel.data == "sms":
+            if not value:
+                raise ValidationError("Para SMS, ingresá un número de teléfono.")
 
 
 class ApiKeyForm(FlaskForm):
