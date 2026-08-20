@@ -112,3 +112,10 @@ class AlertRuleForm(FlaskForm):
     def validate_channel(self, field):
         if field.data not in ALERT_CHANNELS:
             raise ValidationError("Canal inválido.")
+
+
+class ApiKeyForm(FlaskForm):
+    name = StringField(
+        "Nombre / descripción de la clave",
+        validators=[DataRequired(), Length(2, 120)],
+    )

@@ -77,14 +77,21 @@ def run_simulator(app, interval=3.0, count=0):
     print(f"⚡ Simulador SOC-PYME iniciado ({click_msg}).")
     try:
         with app.app_context():
+            from models import Company
+            client_ids = [c.id for c in Company.query.filter_by(kind="cliente").all()]
+            if not client_ids:
+                client_ids = [None]  # sin empresas: eventos sin dueño
             while count == 0 or generated < count:
                 event = make_event()
+                # Repartir los eventos entre las empresas cliente (multi-tenant)
+                event.company_id = random.choice(client_ids)
                 db.session.add(event)
                 db.session.commit()
                 triggered = evaluate_alerts()
                 generated += 1
                 flag = "  🚨 ALERTA" if triggered else ""
-                print(f"[{generated}] {event.severity_label:<8} {event.event_type} · {event.source_ip}{flag}")
+                cid = event.company_id if event.company_id else "-"
+                print(f"[{generated}] emp:{cid} {event.severity_label:<8} {event.event_type} · {event.source_ip}{flag}")
                 if count and generated >= count:
                     break
                 time.sleep(interval)

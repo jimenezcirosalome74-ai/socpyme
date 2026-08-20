@@ -25,8 +25,15 @@ clean" (Inter + DM Mono, paleta navy/cyan/blue) con gráficos **Chart.js**.
   N de eventos en ventana de X minutos y canal de notificación. Los cambios
   quedan en una **bitácora de auditoría**. Al superarse un umbral se genera una
   **notificación** en la campanita del topbar.
+- **Multi-tenancy + roles**: cada empresa (tenant) ve **solo sus** eventos,
+  incidentes, alertas y notificaciones. Roles: `cliente`/`admin` (acotados a su
+  empresa) y `analista` del SOC (ve **todas** las empresas). El registro crea una
+  empresa nueva y deja al usuario como su administrador.
+- **Claves API por empresa** (`/claves-api`): generá, activá/desactivá y eliminá
+  claves. `POST /api/events` exige el header `X-API-Key` y asocia el evento a la
+  empresa dueña de la clave.
 - **API REST JSON** para inyección externa de eventos y consumo de datos.
-- **Simulador** de eventos realistas para demostrar el tiempo real.
+- **Simulador** de eventos realistas (repartidos entre empresas) para el tiempo real.
 - Páginas de error **404 / 500** personalizadas.
 
 ---
@@ -66,13 +73,16 @@ La app queda disponible en **http://localhost:5000**.
 
 ## 🔑 Credenciales demo
 
-| Rol      | Email               | Contraseña   |
-|----------|---------------------|--------------|
-| Cliente  | `demo@socpyme.co`   | `Demo1234!`  |
-| Analista | `julian@socpyme.co` | `Analista2026!` |
+| Rol | Empresa | Email | Contraseña |
+|-----|---------|-------|------------|
+| Admin (cliente) | Ferretería El Tornillo SAS | `demo@socpyme.co` | `Demo1234!` |
+| Admin (cliente) | Panadería La Espiga SAS | `sofia@laespiga.co` | `Espiga2026!` |
+| Analista SOC (ve todo) | SOC-PYME Solutions | `julian@socpyme.co` | `Analista2026!` |
 
-Desde la landing, el botón **"Ver demo en vivo"** lleva al login con estas
-credenciales visibles.
+Ingresá con **`demo@socpyme.co`** y con **`sofia@laespiga.co`**: cada uno ve
+**solo los datos de su empresa**. Con **`julian@socpyme.co`** ves los datos de
+**todas** las empresas (rol analista). Desde la landing, **"Ver demo en vivo"**
+lleva al login con las credenciales del cliente visibles.
 
 ---
 
@@ -95,14 +105,17 @@ KPIs, gráficos y la campanita de notificaciones actualizarse en vivo.
 ## 🌐 API REST
 
 Todas las respuestas son JSON con `"ok": true|false` y códigos HTTP correctos.
-Los endpoints de lectura del panel requieren sesión; **`POST /api/events` es
-público** para permitir que sistemas externos inyecten eventos.
+Los endpoints de lectura del panel requieren **sesión** y están acotados a la
+empresa del usuario. **`POST /api/events` requiere una API key** (header
+`X-API-Key`) y asocia el evento a la empresa dueña de la clave. Generá tus claves
+en el panel → **Claves API** (`/claves-api`).
 
 ### Inyectar un evento (sistemas externos)
 
 ```bash
 curl -X POST http://localhost:5000/api/events \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: socpyme_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" \
   -d '{
         "severity": "critico",
         "type": "Acceso SSH no autorizado",
@@ -113,20 +126,21 @@ curl -X POST http://localhost:5000/api/events \
 
 Respuesta `201`:
 ```json
-{ "ok": true, "event": { "...": "..." }, "alerts_triggered": 1 }
+{ "ok": true, "event": { "...": "..." }, "company_id": 2, "alerts_triggered": 1 }
 ```
+Sin clave o con clave inválida devuelve `401`.
 
 ### Otros endpoints
 
-| Método | Ruta                               | Descripción                          |
-|--------|------------------------------------|--------------------------------------|
-| GET    | `/api/dashboard`                   | KPIs, series de gráficos y notifs    |
-| GET    | `/api/events?severity=critico`     | Lista de eventos (con filtros)       |
-| POST   | `/api/events`                      | Inyección de evento (público)        |
-| GET    | `/api/incidents?status=abierto`    | Lista de incidentes                  |
-| POST   | `/api/incidents`                   | Crear incidente                      |
-| PATCH  | `/api/incidents/<id>`              | Actualizar estado/asignación         |
-| POST   | `/api/notifications/read-all`      | Marcar notificaciones como leídas    |
+| Método | Ruta                               | Auth       | Descripción                          |
+|--------|------------------------------------|------------|--------------------------------------|
+| GET    | `/api/dashboard`                   | sesión     | KPIs, gráficos y notifs (de tu empresa) |
+| GET    | `/api/events?severity=critico`     | sesión     | Eventos de tu empresa (con filtros)  |
+| POST   | `/api/events`                      | API key    | Inyección de evento                  |
+| GET    | `/api/incidents?status=abierto`    | sesión     | Incidentes de tu empresa             |
+| POST   | `/api/incidents`                   | sesión     | Crear incidente                      |
+| PATCH  | `/api/incidents/<id>`              | sesión     | Actualizar estado/asignación         |
+| POST   | `/api/notifications/read-all`      | sesión     | Marcar notificaciones como leídas    |
 
 Ejemplo de consulta:
 ```bash
@@ -142,7 +156,7 @@ soc-pyme/
 ├── app.py               # App factory + CLI (simulate, seed) + error handlers
 ├── config.py            # SECRET_KEY, DB, cookies seguras, parámetros
 ├── extensions.py        # db, login_manager, csrf
-├── models.py            # User, Event, Incident, IncidentLog, AlertRule, AuditLog, Notification
+├── models.py            # Company, User(rol), Event, Incident, IncidentLog, AlertRule, AuditLog, Notification, ApiKey
 ├── forms.py             # Formularios WTForms (validación + CSRF)
 ├── services.py          # Lógica: evaluación de alertas, KPIs, bitácora
 ├── seed.py              # Datos demo realistas
@@ -155,6 +169,7 @@ soc-pyme/
 │   ├── events.py        # Eventos: lista, filtros, detalle
 │   ├── incidents.py     # Incidentes: CRUD + bitácora
 │   ├── alerts.py        # Reglas de alerta: CRUD + toggle + bitácora (RF-05)
+│   ├── apikeys.py       # Claves API por empresa (multi-tenancy)
 │   └── api.py           # API REST JSON
 ├── templates/
 │   ├── base.html            # Layout público
@@ -165,6 +180,7 @@ soc-pyme/
 │   ├── events/              # list.html, detail.html
 │   ├── incidents/           # list.html, detail.html, new.html
 │   ├── alerts/              # list.html, form.html
+│   ├── apikeys/             # index.html
 │   └── errors/              # 404.html, 500.html
 └── static/
     ├── css/  (main.css, dashboard.css)
@@ -178,6 +194,10 @@ soc-pyme/
 - Contraseñas hasheadas con Werkzeug (`generate_password_hash`).
 - Protección **CSRF** en todos los formularios (Flask-WTF); la API JSON se exime
   explícitamente por diseño.
+- **Aislamiento por empresa (multi-tenancy)**: cada consulta se filtra por la
+  empresa del usuario; el acceso directo por URL a datos de otra empresa devuelve
+  404. El rol `analista` es el único con visión global.
+- **Inyección de eventos autenticada** con API key por empresa (header `X-API-Key`).
 - Cookies de sesión `HttpOnly` + `SameSite=Lax` (y `Secure` en producción).
 - Todas las rutas del panel protegidas con `@login_required`.
 - Validación de entradas en cliente **y** servidor; protección contra
@@ -198,7 +218,7 @@ El repo incluye dos scripts de prueba (opcionales, requieren la app corriendo
 solo para `browser_check.py`):
 
 ```bash
-python verify_e2e.py       # 33 checks end-to-end con el test client de Flask
+python verify_e2e.py       # 40 checks end-to-end (incluye multi-tenancy y API keys)
 python browser_check.py    # verificación en navegador (requiere: pip install playwright)
 ```
 

@@ -30,7 +30,10 @@
         <a href="{{ url_for('alerts.list_rules') }}" class="{% if active_page == 'alerts' %}active{% endif %}">
           <span class="ic">🚨</span> Alertas
         </a>
-        <div class="sidebar-section">Recursos</div>
+        <div class="sidebar-section">Configuración</div>
+        <a href="{{ url_for('apikeys.index') }}" class="{% if active_page == 'apikeys' %}active{% endif %}">
+          <span class="ic">🔑</span> Claves API
+        </a>
         <a href="{{ url_for('main.index') }}"><span class="ic">🌐</span> Ver landing</a>
       </nav>
       <div class="sidebar-foot">
@@ -38,7 +41,7 @@
           <div class="sidebar-avatar">{{ current_user.initials }}</div>
           <div class="sidebar-user-info">
             <strong>{{ current_user.name }}</strong>
-            <span>{{ current_user.company }}</span>
+            <span>{{ current_user.company_name }} · {{ current_user.role_label }}</span>
           </div>
         </div>
         <a href="{{ url_for('auth.logout') }}" class="sidebar-logout">Cerrar sesión</a>

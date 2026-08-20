@@ -1,4 +1,5 @@
 """Modelos SQLAlchemy de SOC-PYME Solutions."""
+import secrets
 from datetime import datetime, timezone
 
 from flask_login import UserMixin
@@ -37,6 +38,35 @@ ALERT_CHANNEL_LABELS = {
     "sms": "SMS",
 }
 
+# Roles de usuario
+#   analista -> operador del SOC: ve los datos de TODAS las empresas (global)
+#   admin    -> dueño de su empresa: administra su empresa y sus claves API
+#   cliente  -> usuario de una empresa: ve solo los datos de su empresa
+ROLES = ("analista", "admin", "cliente")
+ROLE_LABELS = {"analista": "Analista SOC", "admin": "Administrador", "cliente": "Cliente"}
+
+
+# ---------------------------------------------------------------------------
+# Empresa (tenant)
+# ---------------------------------------------------------------------------
+class Company(db.Model):
+    __tablename__ = "companies"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(160), nullable=False)
+    kind = db.Column(db.String(20), nullable=False, default="cliente")  # cliente / proveedor
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+
+    users = db.relationship("User", back_populates="company", lazy="dynamic")
+    events = db.relationship("Event", back_populates="company", lazy="dynamic")
+    incidents = db.relationship("Incident", back_populates="company", lazy="dynamic")
+    alert_rules = db.relationship("AlertRule", back_populates="company", lazy="dynamic")
+    api_keys = db.relationship("ApiKey", back_populates="company", lazy="dynamic",
+                               cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<Company {self.name}>"
+
 
 # ---------------------------------------------------------------------------
 # Usuario
@@ -46,11 +76,13 @@ class User(UserMixin, db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
-    company = db.Column(db.String(120), nullable=False)
     email = db.Column(db.String(160), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default="admin")
+    company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=True, index=True)
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
 
+    company = db.relationship("Company", back_populates="users")
     incidents = db.relationship("Incident", back_populates="assignee", lazy="dynamic")
     notifications = db.relationship(
         "Notification", back_populates="user", lazy="dynamic",
@@ -64,6 +96,19 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, raw_password)
 
     @property
+    def is_global(self):
+        """El analista del SOC ve los datos de todas las empresas."""
+        return self.role == "analista"
+
+    @property
+    def role_label(self):
+        return ROLE_LABELS.get(self.role, self.role)
+
+    @property
+    def company_name(self):
+        return self.company.name if self.company else "—"
+
+    @property
     def initials(self):
         parts = self.name.split()
         if len(parts) >= 2:
@@ -71,7 +116,7 @@ class User(UserMixin, db.Model):
         return self.name[:2].upper()
 
     def __repr__(self):
-        return f"<User {self.email}>"
+        return f"<User {self.email} ({self.role})>"
 
 
 @login_manager.user_loader
@@ -92,7 +137,9 @@ class Event(db.Model):
     description = db.Column(db.Text, nullable=False, default="")
     source_ip = db.Column(db.String(45), nullable=False, default="")
     status = db.Column(db.String(20), nullable=False, default="nuevo", index=True)
+    company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=True, index=True)
 
+    company = db.relationship("Company", back_populates="events")
     incidents = db.relationship("Incident", back_populates="event", lazy="dynamic")
 
     @property
@@ -114,6 +161,7 @@ class Event(db.Model):
             "source_ip": self.source_ip,
             "status": self.status,
             "status_label": self.status_label,
+            "company_id": self.company_id,
         }
 
     def __repr__(self):
@@ -134,11 +182,13 @@ class Incident(db.Model):
 
     assignee_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     event_id = db.Column(db.Integer, db.ForeignKey("events.id"), nullable=True)
+    company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=True, index=True)
 
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow, nullable=False)
     closed_at = db.Column(db.DateTime, nullable=True)
 
+    company = db.relationship("Company", back_populates="incidents")
     assignee = db.relationship("User", back_populates="incidents")
     event = db.relationship("Event", back_populates="incidents")
     logs = db.relationship(
@@ -216,6 +266,9 @@ class AlertRule(db.Model):
     channel = db.Column(db.String(20), nullable=False, default="in_app")
     active = db.Column(db.Boolean, default=True, nullable=False)
     last_triggered_at = db.Column(db.DateTime, nullable=True)
+    company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=True, index=True)
+
+    company = db.relationship("Company", back_populates="alert_rules")
 
     @property
     def severity_label(self):
@@ -252,6 +305,7 @@ class AuditLog(db.Model):
     action = db.Column(db.String(80), nullable=False)        # creada/editada/activada/eliminada
     detail = db.Column(db.String(400), nullable=False, default="")
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=True, index=True)
     timestamp = db.Column(db.DateTime, default=utcnow, nullable=False, index=True)
 
     user = db.relationship("User")
@@ -275,7 +329,8 @@ class Notification(db.Model):
     __tablename__ = "notifications"
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)  # None = global
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=True, index=True)  # None = global
     kind = db.Column(db.String(20), nullable=False, default="alerta")
     message = db.Column(db.String(300), nullable=False)
     read = db.Column(db.Boolean, default=False, nullable=False, index=True)
@@ -293,4 +348,45 @@ class Notification(db.Model):
             "read": self.read,
             "created_at": self.created_at.isoformat(),
             "incident_id": self.incident_id,
+            "company_id": self.company_id,
         }
+
+
+# ---------------------------------------------------------------------------
+# Claves API (autenticación de la inyección externa de eventos)
+# ---------------------------------------------------------------------------
+class ApiKey(db.Model):
+    __tablename__ = "api_keys"
+
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=False, index=True)
+    name = db.Column(db.String(120), nullable=False)
+    token = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    active = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+    last_used_at = db.Column(db.DateTime, nullable=True)
+
+    company = db.relationship("Company", back_populates="api_keys")
+
+    @staticmethod
+    def generate_token():
+        """Token con prefijo propio de la plataforma, ej: socpyme_<32 hex>."""
+        return "socpyme_" + secrets.token_hex(16)
+
+    @property
+    def masked(self):
+        """Muestra solo el prefijo y los últimos 4 caracteres."""
+        if len(self.token) <= 12:
+            return self.token
+        return f"{self.token[:11]}…{self.token[-4:]}"
+
+    def to_dict(self, reveal=False):
+        data = {
+            "id": self.id,
+            "name": self.name,
+            "token": self.token if reveal else self.masked,
+            "active": self.active,
+            "created_at": self.created_at.isoformat(),
+            "last_used_at": self.last_used_at.isoformat() if self.last_used_at else None,
+        }
+        return data

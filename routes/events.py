@@ -4,11 +4,12 @@ from datetime import datetime
 from flask import (
     Blueprint, render_template, request, redirect, url_for, flash, abort, current_app,
 )
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 from extensions import db
 from models import Event, SEVERITIES, EVENT_STATES
 from forms import EventStatusForm
+from services import scope_by_company, can_access
 
 events_bp = Blueprint("events", __name__, url_prefix="/eventos")
 
@@ -23,7 +24,7 @@ def _parse_date(value):
 @events_bp.route("/")
 @login_required
 def list_events():
-    q = Event.query
+    q = scope_by_company(Event.query, Event, current_user)
 
     severity = request.args.get("severity", "").strip()
     status = request.args.get("status", "").strip()
@@ -75,7 +76,7 @@ def list_events():
 @login_required
 def detail(event_id):
     event = db.session.get(Event, event_id)
-    if event is None:
+    if event is None or not can_access(current_user, event):
         abort(404)
     form = EventStatusForm(status=event.status)
     return render_template("events/detail.html", event=event, form=form)
@@ -85,7 +86,7 @@ def detail(event_id):
 @login_required
 def change_status(event_id):
     event = db.session.get(Event, event_id)
-    if event is None:
+    if event is None or not can_access(current_user, event):
         abort(404)
     form = EventStatusForm()
     if form.validate_on_submit():

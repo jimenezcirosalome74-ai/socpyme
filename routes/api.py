@@ -1,23 +1,31 @@
 """API REST JSON de SOC-PYME.
 
 Endpoints:
-  GET  /api/dashboard              -> KPIs, series de gráficos y notificaciones
-  GET  /api/events                 -> lista de eventos (con filtros)
-  POST /api/events                 -> inyección de eventos por sistemas externos
-  GET  /api/incidents              -> lista de incidentes
-  POST /api/incidents              -> crear incidente
-  PATCH /api/incidents/<id>        -> actualizar incidente
-  POST /api/notifications/<id>/read
-  POST /api/notifications/read-all
+  GET   /api/dashboard              -> KPIs, series de gráficos y notificaciones (sesión)
+  GET   /api/events                 -> lista de eventos de tu empresa (sesión)
+  POST  /api/events                 -> inyección de eventos (requiere API key)
+  GET   /api/incidents              -> lista de incidentes de tu empresa (sesión)
+  POST  /api/incidents              -> crear incidente (sesión)
+  PATCH /api/incidents/<id>         -> actualizar incidente (sesión)
+  POST  /api/notifications/<id>/read
+  POST  /api/notifications/read-all
+
+La inyección de eventos (POST /api/events) NO usa sesión: se autentica con una
+clave API por empresa vía header `X-API-Key`, y el evento queda asociado a esa
+empresa (multi-tenancy).
 """
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 
 from extensions import db
 from models import (
-    Event, Incident, Notification, SEVERITIES, EVENT_STATES, INCIDENT_STATES, utcnow,
+    Event, Incident, Notification, ApiKey,
+    SEVERITIES, EVENT_STATES, INCIDENT_STATES, utcnow,
 )
-from services import evaluate_alerts, dashboard_stats, log_incident_change
+from services import (
+    evaluate_alerts, dashboard_stats, log_incident_change,
+    scope_by_company, can_access, notifications_query,
+)
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 
@@ -26,26 +34,34 @@ def error(message, code=400):
     return jsonify({"ok": False, "error": message}), code
 
 
+def _authenticate_api_key():
+    """Devuelve la ApiKey activa del header X-API-Key, o None."""
+    token = request.headers.get("X-API-Key", "").strip()
+    if not token:
+        return None
+    return ApiKey.query.filter_by(token=token, active=True).first()
+
+
 # ---------------------------------------------------------------------------
 # Dashboard (polling)
 # ---------------------------------------------------------------------------
 @api_bp.route("/dashboard")
 @login_required
 def dashboard():
-    stats = dashboard_stats()
-    recent = [e.to_dict() for e in Event.query.order_by(Event.timestamp.desc()).limit(10).all()]
-    notifs = (
-        Notification.query.filter_by(read=False)
-        .order_by(Notification.created_at.desc())
-        .limit(10)
-        .all()
-    )
+    stats = dashboard_stats(current_user)
+    recent = [
+        e.to_dict() for e in
+        scope_by_company(Event.query, Event, current_user)
+        .order_by(Event.timestamp.desc()).limit(10).all()
+    ]
+    unread_q = notifications_query(current_user).filter(Notification.read.is_(False))
+    notifs = unread_q.order_by(Notification.created_at.desc()).limit(10).all()
     return jsonify({
         "ok": True,
         **stats,
         "recent_events": recent,
         "notifications": {
-            "unread": Notification.query.filter_by(read=False).count(),
+            "unread": unread_q.count(),
             "items": [n.to_dict() for n in notifs],
         },
     })
@@ -57,7 +73,7 @@ def dashboard():
 @api_bp.route("/events", methods=["GET"])
 @login_required
 def list_events():
-    q = Event.query
+    q = scope_by_company(Event.query, Event, current_user)
     severity = request.args.get("severity")
     status = request.args.get("status")
     if severity in SEVERITIES:
@@ -71,14 +87,19 @@ def list_events():
 
 @api_bp.route("/events", methods=["POST"])
 def create_event():
-    """Inyección de eventos por sistemas externos (sin sesión, CSRF exento).
+    """Inyección de eventos por sistemas externos (requiere API key, CSRF exento).
 
     Ejemplo:
       curl -X POST http://localhost:5000/api/events \\
         -H "Content-Type: application/json" \\
+        -H "X-API-Key: socpyme_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" \\
         -d '{"severity":"critico","type":"Acceso SSH no autorizado",
              "description":"Puerto 22","source_ip":"203.0.113.9"}'
     """
+    api_key = _authenticate_api_key()
+    if api_key is None:
+        return error("API key inválida o ausente (header X-API-Key).", 401)
+
     data = request.get_json(silent=True) or {}
     severity = (data.get("severity") or "info").lower()
     event_type = (data.get("type") or data.get("event_type") or "").strip()
@@ -94,7 +115,9 @@ def create_event():
         description=(data.get("description") or "")[:2000],
         source_ip=(data.get("source_ip") or "")[:45],
         status="nuevo",
+        company_id=api_key.company_id,
     )
+    api_key.last_used_at = utcnow()
     db.session.add(event)
     db.session.commit()
 
@@ -102,6 +125,7 @@ def create_event():
     return jsonify({
         "ok": True,
         "event": event.to_dict(),
+        "company_id": api_key.company_id,
         "alerts_triggered": len(triggered),
     }), 201
 
@@ -112,7 +136,7 @@ def create_event():
 @api_bp.route("/incidents", methods=["GET"])
 @login_required
 def list_incidents():
-    q = Incident.query
+    q = scope_by_company(Incident.query, Incident, current_user)
     status = request.args.get("status")
     if status in INCIDENT_STATES:
         q = q.filter(Incident.status == status)
@@ -131,12 +155,22 @@ def create_incident():
     if severity not in SEVERITIES:
         return error(f"severity debe ser uno de {SEVERITIES}")
 
+    # La empresa del incidente: la del evento vinculado (si es accesible) o la del usuario
+    company_id = current_user.company_id
+    event_id = data.get("event_id")
+    if event_id:
+        ev = db.session.get(Event, event_id)
+        if ev is None or not can_access(current_user, ev):
+            return error("event_id inválido o sin acceso", 404)
+        company_id = ev.company_id
+
     incident = Incident(
         title=title[:200],
         description=(data.get("description") or "")[:4000],
         severity=severity,
         status="abierto",
-        event_id=data.get("event_id"),
+        event_id=event_id,
+        company_id=company_id,
     )
     db.session.add(incident)
     db.session.flush()
@@ -149,7 +183,7 @@ def create_incident():
 @login_required
 def patch_incident(incident_id):
     incident = db.session.get(Incident, incident_id)
-    if incident is None:
+    if incident is None or not can_access(current_user, incident):
         return error("Incidente no encontrado", 404)
 
     data = request.get_json(silent=True) or {}
@@ -178,7 +212,7 @@ def patch_incident(incident_id):
 @login_required
 def mark_read(notif_id):
     notif = db.session.get(Notification, notif_id)
-    if notif is None:
+    if notif is None or not _notif_visible(notif):
         return error("Notificación no encontrada", 404)
     notif.read = True
     db.session.commit()
@@ -188,6 +222,14 @@ def mark_read(notif_id):
 @api_bp.route("/notifications/read-all", methods=["POST"])
 @login_required
 def mark_all_read():
-    Notification.query.filter_by(read=False).update({"read": True})
+    notifications_query(current_user).filter(Notification.read.is_(False)).update(
+        {"read": True}, synchronize_session=False
+    )
     db.session.commit()
     return jsonify({"ok": True})
+
+
+def _notif_visible(notif):
+    if current_user.is_global:
+        return True
+    return notif.company_id in (None, current_user.company_id)

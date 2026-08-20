@@ -5,7 +5,7 @@ from flask import (
 from flask_login import login_user, logout_user, login_required, current_user
 
 from extensions import db
-from models import User
+from models import User, Company
 from forms import RegisterForm, LoginForm
 
 auth_bp = Blueprint("auth", __name__)
@@ -23,17 +23,24 @@ def register():
             flash("Ya existe una cuenta con ese email.", "error")
             return render_template("auth/register.html", form=form)
 
+        # Modelo SaaS de autoservicio: cada registro crea su propia empresa
+        # y el usuario queda como administrador de ella.
+        company = Company(name=form.company.data.strip(), kind="cliente")
+        db.session.add(company)
+        db.session.flush()  # obtener company.id
+
         user = User(
             name=form.name.data.strip(),
-            company=form.company.data.strip(),
             email=email,
+            role="admin",
+            company_id=company.id,
         )
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
 
         login_user(user)
-        flash(f"¡Bienvenido, {user.name}! Tu cuenta fue creada.", "success")
+        flash(f"¡Bienvenido, {user.name}! Tu empresa «{company.name}» fue creada.", "success")
         return redirect(url_for("dashboard.index"))
 
     return render_template("auth/register.html", form=form)

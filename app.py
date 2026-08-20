@@ -31,6 +31,7 @@ def create_app(config_name=None):
     from routes.events import events_bp
     from routes.incidents import incidents_bp
     from routes.alerts import alerts_bp
+    from routes.apikeys import apikeys_bp
     from routes.api import api_bp
 
     app.register_blueprint(main_bp)
@@ -39,6 +40,7 @@ def create_app(config_name=None):
     app.register_blueprint(events_bp)
     app.register_blueprint(incidents_bp)
     app.register_blueprint(alerts_bp)
+    app.register_blueprint(apikeys_bp)
     app.register_blueprint(api_bp)
 
     # La API JSON se exime de CSRF (usa sesión/inyección externa, no formularios)
@@ -59,16 +61,13 @@ def _register_context(app):
     @app.context_processor
     def inject_globals():
         from models import Notification
+        from services import notifications_query
         unread = 0
         recent_notifs = []
         if current_user.is_authenticated:
-            unread = Notification.query.filter_by(read=False).count()
-            recent_notifs = (
-                Notification.query.filter_by(read=False)
-                .order_by(Notification.created_at.desc())
-                .limit(8)
-                .all()
-            )
+            unread_q = notifications_query(current_user).filter(Notification.read.is_(False))
+            unread = unread_q.count()
+            recent_notifs = unread_q.order_by(Notification.created_at.desc()).limit(8).all()
         return {
             "unread_notifications": unread,
             "recent_notifications": recent_notifs,

@@ -13,7 +13,7 @@ except (AttributeError, ValueError):
 
 from app import create_app
 from seed import seed_database
-from models import AlertRule, Notification
+from models import AlertRule, Notification, Company, ApiKey, Event, User
 
 CSRF_RE = re.compile(r'name="csrf_token"[^>]*value="([^"]+)"')
 
@@ -34,6 +34,18 @@ def main():
     app = create_app()
     seed_database(app)  # BD limpia y poblada
     client = app.test_client()
+
+    # --- Datos de referencia (dentro del contexto de la app) ---------------
+    with app.app_context():
+        ferreteria = Company.query.filter_by(name="Ferretería El Tornillo SAS").first()
+        panaderia = Company.query.filter_by(name="Panadería La Espiga SAS").first()
+        FERRE_ID, PAN_ID = ferreteria.id, panaderia.id
+        FERRE_KEY = ApiKey.query.filter_by(company_id=FERRE_ID).first().token
+        PAN_KEY = ApiKey.query.filter_by(company_id=PAN_ID).first().token
+        # Un evento que pertenece a la Panadería (para probar el aislamiento)
+        PAN_EVENT_ID = Event.query.filter_by(company_id=PAN_ID).first().id
+        FERRE_EVENT_TOTAL = Event.query.filter_by(company_id=FERRE_ID).count()
+        EVENT_TOTAL = Event.query.count()
 
     results = []
     print("\n=== 1. Público ===")
@@ -79,25 +91,60 @@ def main():
     r = client.get("/eventos/?q=SSH&status=nuevo")
     results.append(check("Búsqueda + estado", r.status_code == 200))
 
-    print("\n=== 6. API: inyección de eventos y alerta ===")
+    print("\n=== 6. API: inyección de eventos con API key y alerta ===")
+    # Sin API key -> 401
+    r = client.post("/api/events", json={"severity": "critico", "type": "X"})
+    results.append(check("Rechaza inyección sin API key (401)", r.status_code == 401))
+    # API key inválida -> 401
+    r = client.post("/api/events", headers={"X-API-Key": "socpyme_falsa"},
+                    json={"severity": "critico", "type": "X"})
+    results.append(check("Rechaza API key inválida (401)", r.status_code == 401))
+
     before = client.get("/api/dashboard").get_json()["notifications"]["unread"]
     triggered = 0
+    ok201 = 0
     for i in range(5):
-        r = client.post("/api/events", json={
+        r = client.post("/api/events", headers={"X-API-Key": FERRE_KEY}, json={
             "severity": "critico", "type": "Acceso SSH no autorizado",
             "description": f"Prueba {i}", "source_ip": "203.0.113.9",
         })
         if r.status_code == 201:
+            ok201 += 1
             triggered += r.get_json()["alerts_triggered"]
-    results.append(check("POST /api/events (201) x5", triggered >= 0))
+            assert r.get_json()["company_id"] == FERRE_ID
+    results.append(check("POST /api/events con API key (201) x5", ok201 == 5))
     after = client.get("/api/dashboard").get_json()["notifications"]["unread"]
     results.append(check("Alerta generó notificación", after > before, f"({before} -> {after})"))
 
-    # Validación de API
-    r = client.post("/api/events", json={"severity": "xxx", "type": "y"})
+    # Validación de API (con key válida)
+    r = client.post("/api/events", headers={"X-API-Key": FERRE_KEY}, json={"severity": "xxx", "type": "y"})
     results.append(check("API rechaza severidad inválida", r.status_code == 400))
 
-    print("\n=== 7. Incidentes: crear desde evento y cerrar ===")
+    print("\n=== 7. Multi-tenancy: aislamiento por empresa ===")
+    # El admin de Ferretería NO debe ver eventos de la Panadería
+    r = client.get(f"/eventos/{PAN_EVENT_ID}")
+    results.append(check("Cliente NO accede a evento de otra empresa (404)", r.status_code == 404))
+    # La API de eventos solo devuelve los de su empresa
+    ferre_events = client.get("/api/events?limit=200").get_json()
+    all_ferre = all(e["company_id"] == FERRE_ID for e in ferre_events["events"])
+    results.append(check("API eventos scoped a la empresa", all_ferre))
+    # La clave de la Panadería inyecta en la Panadería, invisible para Ferretería
+    client.post("/api/events", headers={"X-API-Key": PAN_KEY},
+                json={"severity": "info", "type": "Evento Panadería", "source_ip": "1.2.3.4"})
+    ferre_after = client.get("/api/events?limit=200").get_json()["events"]
+    results.append(check("Evento de otra empresa NO aparece", all(e["company_id"] == FERRE_ID for e in ferre_after)))
+
+    # El analista del SOC SÍ ve todo
+    ca = app.test_client()
+    at = csrf_from(ca.get("/login").get_data(as_text=True))
+    ca.post("/login", data={"csrf_token": at, "email": "julian@socpyme.co", "password": "Analista2026!"})
+    analyst_events = ca.get("/api/events?limit=200").get_json()
+    companies_seen = {e["company_id"] for e in analyst_events["events"]}
+    results.append(check("Analista ve varias empresas", len(companies_seen) >= 2, f"empresas={companies_seen}"))
+    r = ca.get(f"/eventos/{PAN_EVENT_ID}")
+    results.append(check("Analista SÍ accede a evento de cualquier empresa", r.status_code == 200))
+
+    print("\n=== 8. Incidentes: crear desde evento y cerrar ===")
     # Tomar un evento crítico
     ev = client.get("/api/events?severity=critico&limit=1").get_json()["events"][0]
     page = client.get(f"/incidentes/nuevo?event_id={ev['id']}")
@@ -128,13 +175,13 @@ def main():
         r = client.patch(f"/api/incidents/{new_inc['id']}", json={"status": "abierto"})
         results.append(check("API PATCH incidente", r.status_code == 200 and r.get_json()["incident"]["status"] == "abierto"))
 
-    print("\n=== 8. Notificaciones read-all ===")
+    print("\n=== 9. Notificaciones read-all ===")
     r = client.post("/api/notifications/read-all")
     results.append(check("Marcar todas leídas", r.status_code == 200))
     after2 = client.get("/api/dashboard").get_json()["notifications"]["unread"]
     results.append(check("Contador en 0", after2 == 0, f"({after2})"))
 
-    print("\n=== 9. Reglas de alerta (RF-05) ===")
+    print("\n=== 10. Reglas de alerta (RF-05) ===")
 
     def notif_count(substr, unread_only=True):
         with app.app_context():
@@ -174,10 +221,11 @@ def main():
     rule_id, active = rule_by_name("Regla E2E Info")
     results.append(check("Regla persistida y activa", rule_id is not None and active is True))
 
-    # c) Inyectar eventos que superan el umbral -> debe notificar
+    # c) Inyectar eventos (con API key de Ferretería) que superan el umbral
     before = notif_count("Regla E2E Info")
     for i in range(3):
-        client.post("/api/events", json={"severity": "info", "type": "Login exitoso", "source_ip": "10.0.0.5"})
+        client.post("/api/events", headers={"X-API-Key": FERRE_KEY},
+                    json={"severity": "info", "type": "Login exitoso", "source_ip": "10.0.0.5"})
     after = notif_count("Regla E2E Info")
     results.append(check("Regla dispara notificación", after > before, f"({before} -> {after})"))
 
@@ -191,7 +239,8 @@ def main():
     client.post("/api/notifications/read-all")
     base = notif_count("Regla E2E Info")
     for i in range(4):
-        client.post("/api/events", json={"severity": "info", "type": "Login exitoso", "source_ip": "10.0.0.6"})
+        client.post("/api/events", headers={"X-API-Key": FERRE_KEY},
+                    json={"severity": "info", "type": "Login exitoso", "source_ip": "10.0.0.6"})
     end = notif_count("Regla E2E Info")
     results.append(check("Regla inactiva no dispara", end == base, f"({base} -> {end})"))
 
@@ -201,11 +250,11 @@ def main():
     gone, _ = rule_by_name("Regla E2E Info")
     results.append(check("Eliminar regla", gone is None))
 
-    print("\n=== 10. Errores ===")
+    print("\n=== 11. Errores ===")
     r = client.get("/ruta-inexistente")
     results.append(check("404 personalizado", r.status_code == 404 and "no existe" in r.get_data(as_text=True)))
 
-    print("\n=== 11. Logout ===")
+    print("\n=== 12. Logout ===")
     r = client.get("/logout", follow_redirects=False)
     results.append(check("Logout redirige", r.status_code == 302))
     r = client.get("/panel")

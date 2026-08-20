@@ -9,21 +9,25 @@ from models import (
     Incident, Event, User, INCIDENT_STATES, SEVERITIES, utcnow,
 )
 from forms import IncidentForm, IncidentUpdateForm
-from services import log_incident_change
+from services import log_incident_change, scope_by_company, can_access
 
 incidents_bp = Blueprint("incidents", __name__, url_prefix="/incidentes")
 
 
-def _assignee_choices():
+def _assignee_choices(user):
+    """Responsables posibles: usuarios de la misma empresa + analistas del SOC."""
+    q = User.query
+    if not user.is_global:
+        q = q.filter(db.or_(User.company_id == user.company_id, User.role == "analista"))
     choices = [(0, "— Sin asignar —")]
-    choices += [(u.id, f"{u.name} ({u.company})") for u in User.query.order_by(User.name).all()]
+    choices += [(u.id, f"{u.name} ({u.company_name})") for u in q.order_by(User.name).all()]
     return choices
 
 
 @incidents_bp.route("/")
 @login_required
 def list_incidents():
-    q = Incident.query
+    q = scope_by_company(Incident.query, Incident, current_user)
     status = request.args.get("status", "").strip()
     severity = request.args.get("severity", "").strip()
 
@@ -46,13 +50,15 @@ def list_incidents():
 @login_required
 def new():
     form = IncidentForm()
-    form.assignee_id.choices = _assignee_choices()
+    form.assignee_id.choices = _assignee_choices(current_user)
 
-    # Prefill desde un evento (?event_id=)
+    # Prefill desde un evento (?event_id=) — solo si el usuario puede verlo
     event = None
     event_id = request.values.get("event_id", type=int)
     if event_id:
-        event = db.session.get(Event, event_id)
+        candidate = db.session.get(Event, event_id)
+        if candidate and can_access(current_user, candidate):
+            event = candidate
 
     if request.method == "GET" and event:
         form.title.data = f"Incidente: {event.event_type}"
@@ -68,6 +74,14 @@ def new():
         linked_event_id = form.event_id.data
         linked_event_id = int(linked_event_id) if linked_event_id and linked_event_id.isdigit() else None
 
+        # La empresa del incidente hereda la del evento vinculado; si no, la del usuario
+        company_id = current_user.company_id
+        if linked_event_id:
+            linked = db.session.get(Event, linked_event_id)
+            if linked is None or not can_access(current_user, linked):
+                abort(404)
+            company_id = linked.company_id
+
         incident = Incident(
             title=form.title.data.strip(),
             description=(form.description.data or "").strip(),
@@ -75,6 +89,7 @@ def new():
             status="abierto",
             assignee_id=assignee_id if assignee_id else None,
             event_id=linked_event_id,
+            company_id=company_id,
         )
         db.session.add(incident)
         db.session.flush()  # obtener id para la bitácora
@@ -94,10 +109,10 @@ def new():
 @login_required
 def detail(incident_id):
     incident = db.session.get(Incident, incident_id)
-    if incident is None:
+    if incident is None or not can_access(current_user, incident):
         abort(404)
     form = IncidentUpdateForm(status=incident.status, assignee_id=incident.assignee_id or 0)
-    form.assignee_id.choices = _assignee_choices()
+    form.assignee_id.choices = _assignee_choices(current_user)
     logs = incident.logs.all()
     return render_template("incidents/detail.html", incident=incident, form=form, logs=logs)
 
@@ -106,11 +121,11 @@ def detail(incident_id):
 @login_required
 def update(incident_id):
     incident = db.session.get(Incident, incident_id)
-    if incident is None:
+    if incident is None or not can_access(current_user, incident):
         abort(404)
 
     form = IncidentUpdateForm()
-    form.assignee_id.choices = _assignee_choices()
+    form.assignee_id.choices = _assignee_choices(current_user)
 
     if not form.validate_on_submit():
         flash("Datos inválidos, no se aplicaron los cambios.", "error")
