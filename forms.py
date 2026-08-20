@@ -15,6 +15,11 @@ from models import SEVERITIES, EVENT_STATES, INCIDENT_STATES, ALERT_CHANNELS
 PASSWORD_RE = re.compile(r"^(?=.*[A-Za-z])(?=.*\d).{8,}$")
 
 
+def _validate_strong_password(field):
+    if not PASSWORD_RE.match(field.data or ""):
+        raise ValidationError("Mínimo 8 caracteres, con al menos una letra y un número.")
+
+
 class RegisterForm(FlaskForm):
     name = StringField("Nombre completo", validators=[DataRequired(), Length(2, 120)])
     company = StringField("Empresa", validators=[DataRequired(), Length(2, 120)])
@@ -119,3 +124,55 @@ class ApiKeyForm(FlaskForm):
         "Nombre / descripción de la clave",
         validators=[DataRequired(), Length(2, 120)],
     )
+
+
+# ---------------------------------------------------------------------------
+# Gestión de cuenta
+# ---------------------------------------------------------------------------
+class ProfileForm(FlaskForm):
+    name = StringField("Nombre completo", validators=[DataRequired(), Length(2, 120)])
+    email = StringField("Email", validators=[DataRequired(), Email(), Length(max=160)])
+
+
+class CompanyForm(FlaskForm):
+    company_name = StringField("Nombre de la empresa", validators=[DataRequired(), Length(2, 160)])
+
+
+class ChangePasswordForm(FlaskForm):
+    current_password = PasswordField("Contraseña actual", validators=[DataRequired()])
+    password = PasswordField("Nueva contraseña", validators=[DataRequired(), Length(min=8, max=128)])
+    confirm = PasswordField(
+        "Confirmar nueva contraseña",
+        validators=[DataRequired(), EqualTo("password", message="Las contraseñas no coinciden.")],
+    )
+
+    def validate_password(self, field):
+        _validate_strong_password(field)
+
+
+class ForgotPasswordForm(FlaskForm):
+    email = StringField("Email", validators=[DataRequired(), Email()])
+
+
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField("Nueva contraseña", validators=[DataRequired(), Length(min=8, max=128)])
+    confirm = PasswordField(
+        "Confirmar contraseña",
+        validators=[DataRequired(), EqualTo("password", message="Las contraseñas no coinciden.")],
+    )
+
+    def validate_password(self, field):
+        _validate_strong_password(field)
+
+
+class InviteUserForm(FlaskForm):
+    name = StringField("Nombre completo", validators=[DataRequired(), Length(2, 120)])
+    email = StringField("Email", validators=[DataRequired(), Email(), Length(max=160)])
+    role = SelectField(
+        "Rol",
+        choices=[("cliente", "Cliente (solo lectura de su empresa)"), ("admin", "Administrador")],
+    )
+
+    def validate_role(self, field):
+        if field.data not in ("cliente", "admin"):
+            raise ValidationError("Rol inválido.")

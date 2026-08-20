@@ -1,0 +1,75 @@
+{% extends "base_app.html" %}
+{% set active_page = 'account' %}
+{% block title %}Mi cuenta · SOC-PYME{% endblock %}
+{% block page_title %}Mi cuenta{% endblock %}
+{% block page_sub %}Perfil, empresa y seguridad{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h2>Mi cuenta</h2>
+    <p>Actualizá tus datos, el nombre de tu empresa y tu contraseña.</p>
+  </div>
+</div>
+
+<div class="detail-grid">
+  <div>
+    <!-- Perfil -->
+    <div class="form-card" style="max-width:none;">
+      <div class="panel-title">Datos personales</div>
+      <div class="panel-desc">Tu nombre y email de acceso.</div>
+      <form method="post" action="{{ url_for('account.update_profile') }}">
+        {{ profile_form.csrf_token }}
+        <div class="field">
+          <label for="name">Nombre completo</label>
+          <input type="text" id="name" name="name" value="{{ profile_form.name.data or current_user.name }}" required>
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" value="{{ profile_form.email.data or current_user.email }}" required>
+        </div>
+        <div class="detail-row"><span class="k">Rol</span><span class="v">{{ current_user.role_label }}</span></div>
+        <button type="submit" class="btn btn-primary" style="margin-top:14px;">Guardar perfil</button>
+      </form>
+    </div>
+
+    <!-- Empresa (solo admin/analista) -->
+    {% if current_user.role in ('admin', 'analista') %}
+    <div class="form-card" style="max-width:none; margin-top:18px;">
+      <div class="panel-title">Empresa</div>
+      <div class="panel-desc">Nombre visible de tu empresa ({{ current_user.company_name }}).</div>
+      <form method="post" action="{{ url_for('account.update_company') }}">
+        {{ company_form.csrf_token }}
+        <div class="field">
+          <label for="company_name">Nombre de la empresa</label>
+          <input type="text" id="company_name" name="company_name" value="{{ current_user.company_name }}" required>
+        </div>
+        <button type="submit" class="btn btn-ghost">Actualizar empresa</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Contraseña -->
+  <div class="form-card" style="max-width:none;">
+    <div class="panel-title">Cambiar contraseña</div>
+    <div class="panel-desc">Mínimo 8 caracteres, con una letra y un número.</div>
+    <form method="post" action="{{ url_for('account.change_password') }}" data-validate="account" novalidate>
+      {{ password_form.csrf_token }}
+      <div class="field">
+        <label for="current_password">Contraseña actual</label>
+        <input type="password" id="current_password" name="current_password" required>
+      </div>
+      <div class="field">
+        <label for="password">Nueva contraseña</label>
+        <input type="password" id="password" name="password" required>
+      </div>
+      <div class="field">
+        <label for="confirm">Confirmar nueva contraseña</label>
+        <input type="password" id="confirm" name="confirm" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Cambiar contraseña</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Acceso denegado · SOC-PYME{% endblock %}
+{% block nav %}{% endblock %}
+{% block content %}
+<div class="error-page">
+  <div class="error-code">4<span>0</span>3</div>
+  <h1>No tenés permiso</h1>
+  <p>Esta sección está reservada para administradores de la empresa. Si creés que es un error, contactá al administrador de tu cuenta.</p>
+  <div class="hero-ctas" style="justify-content:center;">
+    {% if current_user.is_authenticated %}
+    <a class="btn-fill" href="{{ url_for('dashboard.index') }}">← Volver al panel</a>
+    {% else %}
+    <a class="btn-fill" href="{{ url_for('main.index') }}">← Volver al inicio</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

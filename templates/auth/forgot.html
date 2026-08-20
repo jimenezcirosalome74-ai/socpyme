@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Recuperar contraseña · SOC-PYME{% endblock %}
+{% block nav %}{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <aside class="auth-aside">
+    <a class="logo" href="{{ url_for('main.index') }}">
+      <div class="logo-icon"></div>
+      <span class="logo-name">SOC-<span>PYME</span></span>
+    </a>
+    <div>
+      <h2>¿Perdiste el acceso?</h2>
+      <p>Ingresá tu email y te generamos un enlace para restablecer tu contraseña.</p>
+    </div>
+    <p style="font-size:13px;">© 2026 SOC-PYME Solutions · Medellín, Colombia</p>
+  </aside>
+
+  <main class="auth-main">
+    <div class="auth-card">
+      <h1>Recuperar contraseña</h1>
+      <p class="lead">Te enviaremos un enlace para crear una nueva.</p>
+
+      {% if reset_link %}
+      <div class="demo-box">
+        <strong>🔗 Enlace de recuperación (entorno demo)</strong>
+        Como todavía no hay servicio de correo, usá este enlace:<br>
+        <a href="{{ reset_link }}" style="word-break:break-all;">{{ reset_link }}</a>
+      </div>
+      {% endif %}
+
+      <form method="post" action="{{ url_for('auth.forgot_password') }}" data-validate="login" novalidate>
+        {{ form.csrf_token }}
+        <div class="field {% if form.email.errors %}has-error{% endif %}">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" value="{{ form.email.data or '' }}" placeholder="tu@empresa.com" required>
+          {% for e in form.email.errors %}<span class="err">{{ e }}</span>{% endfor %}
+        </div>
+        <button type="submit" class="btn-fill btn-block">Enviar enlace →</button>
+      </form>
+
+      <p class="auth-alt">¿Te acordaste? <a href="{{ url_for('auth.login') }}">Volvé a ingresar</a></p>
+    </div>
+  </main>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Nueva contraseña · SOC-PYME{% endblock %}
+{% block nav %}{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <aside class="auth-aside">
+    <a class="logo" href="{{ url_for('main.index') }}">
+      <div class="logo-icon"></div>
+      <span class="logo-name">SOC-<span>PYME</span></span>
+    </a>
+    <div>
+      <h2>Creá una contraseña nueva</h2>
+      <p>Elegí una clave segura: mínimo 8 caracteres, con una letra y un número.</p>
+    </div>
+    <p style="font-size:13px;">© 2026 SOC-PYME Solutions · Medellín, Colombia</p>
+  </aside>
+
+  <main class="auth-main">
+    <div class="auth-card">
+      <h1>Nueva contraseña</h1>
+      <p class="lead">Definí tu nueva contraseña de acceso.</p>
+
+      <form method="post" action="{{ url_for('auth.reset_password', token=token) }}" data-validate="register" novalidate>
+        {{ form.csrf_token }}
+        <div class="field {% if form.password.errors %}has-error{% endif %}">
+          <label for="password">Nueva contraseña</label>
+          <input type="password" id="password" name="password" placeholder="Mínimo 8 caracteres" required>
+          {% for e in form.password.errors %}<span class="err">{{ e }}</span>{% endfor %}
+        </div>
+        <div class="field {% if form.confirm.errors %}has-error{% endif %}">
+          <label for="confirm">Confirmar contraseña</label>
+          <input type="password" id="confirm" name="confirm" placeholder="Repetí la contraseña" required>
+          {% for e in form.confirm.errors %}<span class="err">{{ e }}</span>{% endfor %}
+        </div>
+        <button type="submit" class="btn-fill btn-block">Restablecer contraseña →</button>
+      </form>
+
+      <p class="auth-alt"><a href="{{ url_for('auth.login') }}">Volver al login</a></p>
+    </div>
+  </main>
+</div>
+{% endblock %}

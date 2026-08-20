@@ -32,6 +32,11 @@ clean" (Inter + DM Mono, paleta navy/cyan/blue) con gráficos **Chart.js**.
 - **Claves API por empresa** (`/claves-api`): generá, activá/desactivá y eliminá
   claves. `POST /api/events` exige el header `X-API-Key` y asocia el evento a la
   empresa dueña de la clave.
+- **Gestión de cuenta** (`/cuenta`): editar perfil, renombrar la empresa (admin),
+  **cambiar contraseña**, y **recuperación de contraseña** (`/recuperar`) con
+  token firmado y expirable. Los administradores gestionan los **usuarios de su
+  empresa** (`/cuenta/usuarios`): invitar (con contraseña temporal), cambiar rol
+  y eliminar.
 - **API REST JSON** para inyección externa de eventos y consumo de datos.
 - **Simulador** de eventos realistas (repartidos entre empresas) para el tiempo real.
 - Páginas de error **404 / 500** personalizadas.
@@ -170,18 +175,20 @@ soc-pyme/
 │   ├── incidents.py     # Incidentes: CRUD + bitácora
 │   ├── alerts.py        # Reglas de alerta: CRUD + toggle + bitácora (RF-05)
 │   ├── apikeys.py       # Claves API por empresa (multi-tenancy)
+│   ├── account.py       # Cuenta: perfil, contraseña, empresa y usuarios
 │   └── api.py           # API REST JSON
 ├── templates/
 │   ├── base.html            # Layout público
 │   ├── base_app.html        # Layout del panel (sidebar + topbar + campanita)
 │   ├── index.html           # Landing
-│   ├── auth/                # login.html, register.html
+│   ├── auth/                # login.html, register.html, forgot.html, reset.html
 │   ├── dashboard/           # index.html
 │   ├── events/              # list.html, detail.html
 │   ├── incidents/           # list.html, detail.html, new.html
 │   ├── alerts/              # list.html, form.html
 │   ├── apikeys/             # index.html
-│   └── errors/              # 404.html, 500.html
+│   ├── account/             # index.html, users.html
+│   └── errors/              # 403.html, 404.html, 500.html
 └── static/
     ├── css/  (main.css, dashboard.css)
     └── js/   (main.js, dashboard.js)
@@ -218,7 +225,7 @@ El repo incluye dos scripts de prueba (opcionales, requieren la app corriendo
 solo para `browser_check.py`):
 
 ```bash
-python verify_e2e.py       # 40 checks end-to-end (incluye multi-tenancy y API keys)
+python verify_e2e.py       # 52 checks end-to-end (multi-tenancy, API keys y gestión de cuenta)
 python browser_check.py    # verificación en navegador (requiere: pip install playwright)
 ```
 

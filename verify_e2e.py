@@ -250,11 +250,95 @@ def main():
     gone, _ = rule_by_name("Regla E2E Info")
     results.append(check("Eliminar regla", gone is None))
 
-    print("\n=== 11. Errores ===")
+    print("\n=== 11. Gestión de cuenta (C) ===")
+
+    def user_by_email(email):
+        with app.app_context():
+            u = User.query.filter_by(email=email).first()
+            return (u.id, u.role, u.company_id) if u else (None, None, None)
+
+    # a) Editar perfil (cambiar nombre)
+    ptok = csrf_from(client.get("/cuenta/").get_data(as_text=True))
+    client.post("/cuenta/perfil", data={"csrf_token": ptok, "name": "Camila R. (editado)",
+                                         "email": "demo@socpyme.co"}, follow_redirects=True)
+    results.append(check("Editar perfil", "Camila R. (editado)" in client.get("/cuenta/").get_data(as_text=True)))
+
+    # b) Cambiar contraseña: rechaza actual incorrecta, acepta correcta
+    ptok = csrf_from(client.get("/cuenta/").get_data(as_text=True))
+    r = client.post("/cuenta/password", data={"csrf_token": ptok, "current_password": "malísima",
+                    "password": "NuevaClave123", "confirm": "NuevaClave123"}, follow_redirects=True)
+    results.append(check("Rechaza contraseña actual incorrecta", "incorrecta" in r.get_data(as_text=True)))
+    ptok = csrf_from(client.get("/cuenta/").get_data(as_text=True))
+    r = client.post("/cuenta/password", data={"csrf_token": ptok, "current_password": "Demo1234!",
+                    "password": "NuevaClave123", "confirm": "NuevaClave123"}, follow_redirects=True)
+    results.append(check("Cambia contraseña", "actualizada" in r.get_data(as_text=True)))
+    # La nueva contraseña funciona; la vieja no
+    cx = app.test_client()
+    tx = csrf_from(cx.get("/login").get_data(as_text=True))
+    r = cx.post("/login", data={"csrf_token": tx, "email": "demo@socpyme.co", "password": "NuevaClave123"}, follow_redirects=False)
+    results.append(check("Login con la nueva contraseña", r.status_code == 302))
+
+    # c) Invitar usuario a la empresa (admin) y ver la contraseña temporal
+    itok = csrf_from(client.get("/cuenta/usuarios").get_data(as_text=True))
+    r = client.post("/cuenta/usuarios/invitar", data={
+        "csrf_token": itok, "name": "Pedro Nuevo", "email": "pedro@tornillo.co", "role": "cliente",
+    }, follow_redirects=True)
+    m = re.search(r"Pyme-[0-9a-f]{8}", r.get_data(as_text=True))
+    results.append(check("Invitar usuario (contraseña temporal visible)", m is not None))
+    temp_pw = m.group(0) if m else None
+
+    # El invitado puede loguear y queda acotado a la empresa (Ferretería)
+    cp = app.test_client()
+    tp = csrf_from(cp.get("/login").get_data(as_text=True))
+    cp.post("/login", data={"csrf_token": tp, "email": "pedro@tornillo.co", "password": temp_pw})
+    pev = cp.get("/api/events?limit=100").get_json()
+    results.append(check("Invitado logea y ve solo su empresa",
+                         pev["ok"] and all(e["company_id"] == FERRE_ID for e in pev["events"])))
+
+    # d) Un 'cliente' no puede entrar a la gestión de usuarios (403)
+    r = cp.get("/cuenta/usuarios")
+    results.append(check("Cliente sin permiso de usuarios (403)", r.status_code == 403))
+
+    # e) Admin cambia el rol del invitado y luego lo elimina
+    pid, prole, _ = user_by_email("pedro@tornillo.co")
+    rtok = csrf_from(client.get("/cuenta/usuarios").get_data(as_text=True))
+    client.post(f"/cuenta/usuarios/{pid}/rol", data={"csrf_token": rtok, "role": "admin"}, follow_redirects=True)
+    _, prole2, _ = user_by_email("pedro@tornillo.co")
+    results.append(check("Cambiar rol de usuario", prole2 == "admin"))
+    dtok = csrf_from(client.get("/cuenta/usuarios").get_data(as_text=True))
+    client.post(f"/cuenta/usuarios/{pid}/eliminar", data={"csrf_token": dtok}, follow_redirects=True)
+    gone, _, _ = user_by_email("pedro@tornillo.co")
+    results.append(check("Eliminar usuario", gone is None))
+
+    # f) El admin no puede eliminar su propia cuenta
+    demo_id, _, _ = user_by_email("demo@socpyme.co")
+    stok = csrf_from(client.get("/cuenta/usuarios").get_data(as_text=True))
+    client.post(f"/cuenta/usuarios/{demo_id}/eliminar", data={"csrf_token": stok}, follow_redirects=True)
+    still, _, _ = user_by_email("demo@socpyme.co")
+    results.append(check("No puede auto-eliminarse", still is not None))
+
+    # g) Recuperar contraseña (flujo con token firmado) para otra cuenta
+    c4 = app.test_client()
+    ftok = csrf_from(c4.get("/recuperar").get_data(as_text=True))
+    r = c4.post("/recuperar", data={"csrf_token": ftok, "email": "sofia@laespiga.co"})
+    link = re.search(r"/restablecer/([^\s\"<]+)", r.get_data(as_text=True))
+    results.append(check("Genera enlace de recuperación", link is not None))
+    if link:
+        token = link.group(1)
+        rtok = csrf_from(c4.get(f"/restablecer/{token}").get_data(as_text=True))
+        c4.post(f"/restablecer/{token}", data={"csrf_token": rtok,
+                "password": "Reseteada123", "confirm": "Reseteada123"}, follow_redirects=True)
+        c5 = app.test_client()
+        t5 = csrf_from(c5.get("/login").get_data(as_text=True))
+        r = c5.post("/login", data={"csrf_token": t5, "email": "sofia@laespiga.co",
+                    "password": "Reseteada123"}, follow_redirects=False)
+        results.append(check("Login tras restablecer contraseña", r.status_code == 302))
+
+    print("\n=== 12. Errores ===")
     r = client.get("/ruta-inexistente")
     results.append(check("404 personalizado", r.status_code == 404 and "no existe" in r.get_data(as_text=True)))
 
-    print("\n=== 12. Logout ===")
+    print("\n=== 13. Logout ===")
     r = client.get("/logout", follow_redirects=False)
     results.append(check("Logout redirige", r.status_code == 302))
     r = client.get("/panel")

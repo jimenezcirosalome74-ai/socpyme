@@ -32,6 +32,7 @@ def create_app(config_name=None):
     from routes.incidents import incidents_bp
     from routes.alerts import alerts_bp
     from routes.apikeys import apikeys_bp
+    from routes.account import account_bp
     from routes.api import api_bp
 
     app.register_blueprint(main_bp)
@@ -41,6 +42,7 @@ def create_app(config_name=None):
     app.register_blueprint(incidents_bp)
     app.register_blueprint(alerts_bp)
     app.register_blueprint(apikeys_bp)
+    app.register_blueprint(account_bp)
     app.register_blueprint(api_bp)
 
     # La API JSON se exime de CSRF (usa sesión/inyección externa, no formularios)
@@ -86,7 +88,7 @@ def _register_errors(app):
 
     @app.errorhandler(403)
     def forbidden(e):
-        return render_template("errors/404.html"), 403
+        return render_template("errors/403.html"), 403
 
 
 def _register_cli(app):

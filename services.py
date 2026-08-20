@@ -1,10 +1,39 @@
-"""Lógica de negocio compartida: multi-tenancy, alertas y bitácora."""
+"""Lógica de negocio compartida: multi-tenancy, alertas, bitácora y tokens."""
+import secrets
 from datetime import timedelta
+
+from flask import current_app
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 from extensions import db
 from models import (
-    Event, AlertRule, Notification, IncidentLog, Incident, AuditLog, utcnow,
+    Event, AlertRule, Notification, IncidentLog, Incident, AuditLog, User, utcnow,
 )
+
+
+# ---------------------------------------------------------------------------
+# Tokens firmados para recuperación de contraseña (sin columnas extra en la BD)
+# ---------------------------------------------------------------------------
+def _reset_serializer():
+    return URLSafeTimedSerializer(current_app.config["SECRET_KEY"], salt="pw-reset")
+
+
+def generate_reset_token(user):
+    return _reset_serializer().dumps({"uid": user.id})
+
+
+def verify_reset_token(token, max_age=3600):
+    """Devuelve el User si el token es válido y no expiró; si no, None."""
+    try:
+        data = _reset_serializer().loads(token, max_age=max_age)
+    except (BadSignature, SignatureExpired):
+        return None
+    return db.session.get(User, data.get("uid"))
+
+
+def generate_temp_password():
+    """Contraseña temporal que cumple la política (letra + número, >= 8)."""
+    return "Pyme-" + secrets.token_hex(4)
 
 
 # ---------------------------------------------------------------------------

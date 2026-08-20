@@ -31,6 +31,14 @@
           <span class="ic">🚨</span> Alertas
         </a>
         <div class="sidebar-section">Configuración</div>
+        <a href="{{ url_for('account.index') }}" class="{% if active_page == 'account' %}active{% endif %}">
+          <span class="ic">👤</span> Mi cuenta
+        </a>
+        {% if current_user.role in ('admin', 'analista') %}
+        <a href="{{ url_for('account.users') }}" class="{% if active_page == 'users' %}active{% endif %}">
+          <span class="ic">👥</span> Usuarios
+        </a>
+        {% endif %}
         <a href="{{ url_for('apikeys.index') }}" class="{% if active_page == 'apikeys' %}active{% endif %}">
           <span class="ic">🔑</span> Claves API
         </a>

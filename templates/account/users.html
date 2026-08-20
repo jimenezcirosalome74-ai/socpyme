@@ -1,0 +1,90 @@
+{% extends "base_app.html" %}
+{% set active_page = 'users' %}
+{% block title %}Usuarios · SOC-PYME{% endblock %}
+{% block page_title %}Usuarios de la empresa{% endblock %}
+{% block page_sub %}Gestión de accesos de {{ current_user.company_name }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h2>Usuarios de {{ current_user.company_name }}</h2>
+    <p>Invitá miembros a tu empresa y gestioná sus roles.</p>
+  </div>
+</div>
+
+{% if temp %}
+<div class="panel" style="border-color:var(--cyan); background:var(--cyan-pale); margin-bottom:18px;">
+  <div class="panel-title">✅ Usuario creado — contraseña temporal</div>
+  <div class="panel-desc">Compartí estos datos con la persona. La contraseña se muestra una sola vez; luego podrá cambiarla en «Mi cuenta».</div>
+  <div class="detail-row"><span class="k">Email</span><span class="v mono">{{ temp.email }}</span></div>
+  <div class="detail-row"><span class="k">Contraseña temporal</span><span class="v mono" style="color:var(--blue);">{{ temp.password }}</span></div>
+</div>
+{% endif %}
+
+<div class="detail-grid">
+  <!-- Lista -->
+  <div class="panel" style="padding:0;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th class="hide-sm">Email</th>
+          <th>Rol</th>
+          <th style="text-align:right;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td><strong>{{ u.name }}</strong>{% if u.id == current_user.id %} <span class="tl-meta">(vos)</span>{% endif %}</td>
+          <td class="mono hide-sm">{{ u.email }}</td>
+          <td><span class="badge {{ 'st-abierto' if u.role == 'admin' else 'st-resuelto' }}">{{ u.role_label }}</span></td>
+          <td>
+            <div class="row-actions">
+              {% if u.id != current_user.id %}
+              <form method="post" action="{{ url_for('account.change_role', user_id=u.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="role" value="{{ 'cliente' if u.role == 'admin' else 'admin' }}">
+                <button type="submit" class="btn btn-ghost btn-sm">Hacer {{ 'cliente' if u.role == 'admin' else 'admin' }}</button>
+              </form>
+              <form method="post" action="{{ url_for('account.delete_user', user_id=u.id) }}"
+                    onsubmit="return confirm('¿Eliminar a {{ u.name }}? Perderá el acceso.');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+              </form>
+              {% else %}
+              <span class="tl-meta">—</span>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Invitar -->
+  <div class="panel">
+    <div class="panel-title">Invitar usuario</div>
+    <div class="panel-desc">Se crea con una contraseña temporal que le compartís.</div>
+    <form method="post" action="{{ url_for('account.invite_user') }}">
+      {{ form.csrf_token }}
+      <div class="field {% if form.name.errors %}has-error{% endif %}">
+        <label for="iname">Nombre completo</label>
+        <input type="text" id="iname" name="name" value="{{ form.name.data or '' }}" required>
+        {% for e in form.name.errors %}<span class="err">{{ e }}</span>{% endfor %}
+      </div>
+      <div class="field {% if form.email.errors %}has-error{% endif %}">
+        <label for="iemail">Email</label>
+        <input type="email" id="iemail" name="email" value="{{ form.email.data or '' }}" required>
+        {% for e in form.email.errors %}<span class="err">{{ e }}</span>{% endfor %}
+      </div>
+      <div class="field">
+        <label for="irole">Rol</label>
+        {{ form.role(id="irole") }}
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Crear usuario</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
