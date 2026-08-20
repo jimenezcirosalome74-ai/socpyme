@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Demasiados intentos · SOC-PYME{% endblock %}
+{% block nav %}{% endblock %}
+{% block content %}
+<div class="error-page">
+  <div class="error-code">4<span>2</span>9</div>
+  <h1>Demasiados intentos</h1>
+  <p>Por seguridad bloqueamos temporalmente esta acción tras varios intentos seguidos. Esperá un minuto y volvé a probar.</p>
+  {% if detail %}<p class="tl-meta">{{ detail }}</p>{% endif %}
+  <div class="hero-ctas" style="justify-content:center;">
+    <a class="btn-fill" href="{{ url_for('main.index') }}">← Volver al inicio</a>
+  </div>
+</div>
+{% endblock %}

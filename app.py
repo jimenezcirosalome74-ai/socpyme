@@ -1,14 +1,17 @@
 """SOC-PYME Solutions — punto de entrada / app factory de Flask."""
+import logging
 import os
-import random
-import time
 
 import click
+from dotenv import load_dotenv
 from flask import Flask, render_template
 from flask_login import current_user
 
+# Cargar variables de entorno desde un archivo .env si existe
+load_dotenv()
+
 from config import config_by_name
-from extensions import db, login_manager, csrf
+from extensions import db, login_manager, csrf, migrate, limiter
 
 
 def create_app(config_name=None):
@@ -16,10 +19,14 @@ def create_app(config_name=None):
     app = Flask(__name__)
     app.config.from_object(config_by_name[config_name])
 
+    _configure_logging(app)
+
     # Inicializar extensiones
     db.init_app(app)
     login_manager.init_app(app)
     csrf.init_app(app)
+    migrate.init_app(app, db)
+    limiter.init_app(app)
 
     # Importar modelos (registra las tablas en el metadata)
     from models import Notification  # noqa: F401
@@ -52,10 +59,24 @@ def create_app(config_name=None):
     _register_errors(app)
     _register_cli(app)
 
-    with app.app_context():
-        db.create_all()
+    # En dev/testing se crean las tablas al vuelo; en producción se usan
+    # migraciones (flask db upgrade).
+    if app.config.get("AUTO_CREATE_DB", True):
+        with app.app_context():
+            db.create_all()
 
     return app
+
+
+def _configure_logging(app):
+    level = logging.DEBUG if app.config.get("DEBUG") else logging.INFO
+    if not app.logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+        ))
+        app.logger.addHandler(handler)
+    app.logger.setLevel(level)
 
 
 def _register_context(app):
@@ -89,6 +110,10 @@ def _register_errors(app):
     @app.errorhandler(403)
     def forbidden(e):
         return render_template("errors/403.html"), 403
+
+    @app.errorhandler(429)
+    def too_many_requests(e):
+        return render_template("errors/429.html", detail=getattr(e, "description", "")), 429
 
 
 def _register_cli(app):

@@ -171,6 +171,10 @@ soc-pyme/
 ├── services.py          # Lógica: evaluación de alertas, KPIs, bitácora
 ├── seed.py              # Datos demo realistas
 ├── simulator.py         # Generador de eventos (flask simulate)
+├── wsgi.py / serve.py   # Punto de entrada WSGI + arranque con waitress
+├── Dockerfile           # Imagen de producción (+ docker-entrypoint.sh)
+├── migrations/          # Migraciones Alembic (Flask-Migrate)
+├── .env.example         # Plantilla de variables de entorno
 ├── requirements.txt
 ├── routes/
 │   ├── main.py          # Landing / páginas públicas
@@ -193,7 +197,7 @@ soc-pyme/
 │   ├── alerts/              # list.html, form.html
 │   ├── apikeys/             # index.html
 │   ├── account/             # index.html, users.html
-│   └── errors/              # 403.html, 404.html, 500.html
+│   └── errors/              # 403.html, 404.html, 429.html, 500.html
 └── static/
     ├── css/  (main.css, dashboard.css)
     └── js/   (main.js, dashboard.js)
@@ -210,6 +214,8 @@ soc-pyme/
   empresa del usuario; el acceso directo por URL a datos de otra empresa devuelve
   404. El rol `analista` es el único con visión global.
 - **Inyección de eventos autenticada** con API key por empresa (header `X-API-Key`).
+- **Rate limiting** en login/registro/recuperación (anti fuerza bruta,
+  Flask-Limiter) — configurable con `AUTH_RATELIMIT`.
 - Cookies de sesión `HttpOnly` + `SameSite=Lax` (y `Secure` en producción).
 - Todas las rutas del panel protegidas con `@login_required`.
 - Validación de entradas en cliente **y** servidor; protección contra
@@ -237,13 +243,46 @@ URL que definas.
 
 ---
 
+## 🚢 Producción / Despliegue
+
+**Servidor WSGI** (waitress, multiplataforma):
+```bash
+python serve.py                              # 0.0.0.0:8000
+# o directamente:
+waitress-serve --listen=0.0.0.0:8000 wsgi:app
+```
+
+**Migraciones de base de datos** (Flask-Migrate/Alembic). En producción el
+esquema NO se crea solo: se aplica con migraciones (así los cambios de esquema
+no obligan a re-sembrar).
+```bash
+export FLASK_APP=app.py
+flask db upgrade                 # aplica las migraciones a la BD
+# al cambiar los modelos:
+flask db migrate -m "descripción del cambio"
+flask db upgrade
+```
+
+**Variables de entorno**: copiá `.env.example` a `.env` y completá (se cargan
+automáticamente con python-dotenv).
+
+**Docker**:
+```bash
+docker build -t soc-pyme .
+docker run -p 8000:8000 -e SECRET_KEY=xxxx -e SEED_DEMO=1 soc-pyme
+```
+El contenedor aplica migraciones y arranca waitress; con `SEED_DEMO=1` además
+carga los datos demo.
+
+---
+
 ## 🧪 Verificación
 
 El repo incluye dos scripts de prueba (opcionales, requieren la app corriendo
 solo para `browser_check.py`):
 
 ```bash
-python verify_e2e.py       # 56 checks end-to-end (multi-tenancy, API keys, cuenta y entrega de alertas)
+python verify_e2e.py       # 57 checks end-to-end (multi-tenancy, API keys, cuenta, alertas, rate limiting)
 python browser_check.py    # verificación en navegador (requiere: pip install playwright)
 ```
 

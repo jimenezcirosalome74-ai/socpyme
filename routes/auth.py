@@ -1,10 +1,10 @@
 """Autenticación: registro, login y logout."""
 from flask import (
-    Blueprint, render_template, redirect, url_for, flash, request,
+    Blueprint, render_template, redirect, url_for, flash, request, current_app,
 )
 from flask_login import login_user, logout_user, login_required, current_user
 
-from extensions import db
+from extensions import db, limiter
 from models import User, Company
 from forms import RegisterForm, LoginForm, ForgotPasswordForm, ResetPasswordForm
 from services import generate_reset_token, verify_reset_token
@@ -12,7 +12,12 @@ from services import generate_reset_token, verify_reset_token
 auth_bp = Blueprint("auth", __name__)
 
 
+def _auth_limit():
+    return current_app.config.get("AUTH_RATELIMIT", "20 per minute")
+
+
 @auth_bp.route("/registro", methods=["GET", "POST"])
+@limiter.limit(_auth_limit, methods=["POST"])
 def register():
     if current_user.is_authenticated:
         return redirect(url_for("dashboard.index"))
@@ -48,6 +53,7 @@ def register():
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
+@limiter.limit(_auth_limit, methods=["POST"])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for("dashboard.index"))
@@ -79,6 +85,7 @@ def logout():
 
 
 @auth_bp.route("/recuperar", methods=["GET", "POST"])
+@limiter.limit(_auth_limit, methods=["POST"])
 def forgot_password():
     if current_user.is_authenticated:
         return redirect(url_for("dashboard.index"))

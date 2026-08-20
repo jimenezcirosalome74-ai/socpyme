@@ -11,9 +11,10 @@ __pycache__/
 *.db
 socpyme.db
 
-# Flask
+# Flask / entorno
 instance/
 .flaskenv
+.env
 
 # Sistema / editor
 .DS_Store

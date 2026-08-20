@@ -407,11 +407,22 @@ def main():
                     "password": "Reseteada123"}, follow_redirects=False)
         results.append(check("Login tras restablecer contraseña", r.status_code == 302))
 
-    print("\n=== 13. Errores ===")
+    print("\n=== 13. Rate limiting de login (B) ===")
+    rl = app.test_client()
+    saw_429 = False
+    for _ in range(30):
+        tok = csrf_from(rl.get("/login").get_data(as_text=True)) or ""
+        r = rl.post("/login", data={"csrf_token": tok, "email": "x@x.co", "password": "nope"})
+        if r.status_code == 429:
+            saw_429 = True
+            break
+    results.append(check("Login se bloquea tras muchos intentos (429)", saw_429))
+
+    print("\n=== 14. Errores ===")
     r = client.get("/ruta-inexistente")
     results.append(check("404 personalizado", r.status_code == 404 and "no existe" in r.get_data(as_text=True)))
 
-    print("\n=== 14. Logout ===")
+    print("\n=== 15. Logout ===")
     r = client.get("/logout", follow_redirects=False)
     results.append(check("Logout redirige", r.status_code == 302))
     r = client.get("/panel")

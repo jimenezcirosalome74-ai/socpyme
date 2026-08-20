@@ -26,6 +26,15 @@ class Config:
     ALERT_DEFAULT_THRESHOLD = 3       # nº de eventos críticos para disparar alerta
     EVENTS_PER_PAGE = 15              # paginación de la lista de eventos
 
+    # Crear tablas automáticamente al arrancar (dev). En producción se usan
+    # migraciones (flask db upgrade), así que se desactiva.
+    AUTO_CREATE_DB = True
+
+    # Rate limiting de endpoints de autenticación (anti fuerza bruta)
+    RATELIMIT_ENABLED = os.environ.get("RATELIMIT_ENABLED", "1") == "1"
+    RATELIMIT_STORAGE_URI = os.environ.get("RATELIMIT_STORAGE_URI", "memory://")
+    AUTH_RATELIMIT = os.environ.get("AUTH_RATELIMIT", "20 per minute")
+
     # Entrega de alertas
     ALERT_WEBHOOK_TIMEOUT = int(os.environ.get("ALERT_WEBHOOK_TIMEOUT", 4))
     # Email (SMTP). Sin SMTP_HOST, los correos se registran en modo demo.
@@ -44,10 +53,17 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     DEBUG = False
     SESSION_COOKIE_SECURE = True
+    AUTO_CREATE_DB = False   # en producción, el esquema se aplica con migraciones
+
+
+class TestingConfig(Config):
+    TESTING = True
+    RATELIMIT_ENABLED = False   # no interferir con las pruebas
 
 
 config_by_name = {
     "development": DevelopmentConfig,
     "production": ProductionConfig,
+    "testing": TestingConfig,
     "default": DevelopmentConfig,
 }
